@@ -29,11 +29,21 @@ docker run -d \
   aptacode/rackpeek:latest
 
 # Bind mount
+mkdir -p config
+sudo chown 1654:1654 config
 docker run -d \
   --name rackpeek \
   -p 8080:8080 \
-  -v $(pwd)/config:/app/config \
+  -v $(pwd)/config:/app/config:Z \
   aptacode/rackpeek:latest
+
+# RackPeek runs as UID/GID 1654:1654 inside the container, so a bind-mounted
+# host directory must be writable by that user. The :Z suffix is needed on
+# SELinux-enabled systems such as Fedora, RHEL, and CentOS; it can be omitted
+# on systems without SELinux.
+
+# To verify the container user:
+docker exec rackpeek id
 
 # Note - RackPeek stores its state in YAML
 config/
