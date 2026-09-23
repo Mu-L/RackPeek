@@ -43,6 +43,7 @@ public sealed class MermaidSerialiser {
             ["Ups"] = new("{\"", "\"}"),           // rhombus — utility
             ["Desktop"] = new("(\"", "\")"),       // rounded rect — endpoint
             ["Laptop"] = new("(\"", "\")"),        // rounded rect — endpoint
+            ["Other"] = new("[\"", "\"]"),         // plain rect — uncategorised
 
             // Logical / service view shapes (don't appear with the physical
             // kinds in the same diagram, so shape reuse across views is OK)

@@ -10,23 +10,24 @@ OPTIONS:
     -v, --version    Prints version information
 
 COMMANDS:
-    summary         Show a summarized report of all resources in the system
-    servers         Manage servers and their components                    
-    switches        Manage network switches                                
-    routers         Manage network routers                                 
-    firewalls       Manage firewalls                                       
-    systems         Manage systems and their dependencies                  
-    accesspoints    Manage access points                                   
-    ups             Manage UPS units                                       
-    desktops        Manage desktop computers and their components          
-    laptops         Manage Laptop computers and their components           
-    services        Manage services and their configurations               
-    ansible         Generate and manage Ansible inventory                  
-    ssh             Generate SSH configuration from infrastructure         
-    hosts           Generate a hosts file from infrastructure              
-    graph           Render inventory as graph diagrams                     
-    tags            Discover tags across resources                         
-    connections     Manage physical or logical port connections            
+    summary         Show a summarized report of all resources in the system    
+    servers         Manage servers and their components                        
+    switches        Manage network switches                                    
+    routers         Manage network routers                                     
+    firewalls       Manage firewalls                                           
+    systems         Manage systems and their dependencies                      
+    accesspoints    Manage access points                                       
+    ups             Manage UPS units                                           
+    other           Manage other hardware that doesn't fit an existing category
+    desktops        Manage desktop computers and their components              
+    laptops         Manage Laptop computers and their components               
+    services        Manage services and their configurations                   
+    ansible         Generate and manage Ansible inventory                      
+    ssh             Generate SSH configuration from infrastructure             
+    hosts           Generate a hosts file from infrastructure                  
+    graph           Render inventory as graph diagrams                         
+    tags            Discover tags across resources                             
+    connections     Manage physical or logical port connections                
 ```
 
 ## `rpk summary`
@@ -2222,6 +2223,244 @@ Remove a tag from a UPS unit
 
 USAGE:
     rpk ups tag remove <name> <tag> [OPTIONS]
+
+ARGUMENTS:
+    <name>     
+    <tag>      
+
+OPTIONS:
+    -h, --help    Prints help information
+```
+
+## `rpk other`
+```
+DESCRIPTION:
+Manage other hardware that doesn't fit an existing category
+
+USAGE:
+    rpk other [OPTIONS] <COMMAND>
+
+OPTIONS:
+    -h, --help    Prints help information
+
+COMMANDS:
+    summary                     Show a hardware report for all other hardware 
+    add <name>                  Add new other hardware                        
+    list                        List all other hardware                       
+    get <name>                  Retrieve other hardware by name               
+    describe <name>             Show detailed information about other hardware
+    set <name>                  Update properties of other hardware           
+    del <name>                  Delete other hardware                         
+    rename <name> <new-name>    Rename other hardware to a new name           
+    label                       Manage labels on other hardware               
+    tag                         Manage tags on other hardware                 
+```
+
+## `rpk other summary`
+```
+DESCRIPTION:
+Show a hardware report for all other hardware
+
+USAGE:
+    rpk other summary [OPTIONS]
+
+OPTIONS:
+    -h, --help    Prints help information
+```
+
+## `rpk other add`
+```
+DESCRIPTION:
+Add new other hardware
+
+USAGE:
+    rpk other add <name> [OPTIONS]
+
+ARGUMENTS:
+    <name>     
+
+OPTIONS:
+    -h, --help    Prints help information
+```
+
+## `rpk other list`
+```
+DESCRIPTION:
+List all other hardware
+
+USAGE:
+    rpk other list [OPTIONS]
+
+OPTIONS:
+    -h, --help    Prints help information
+```
+
+## `rpk other get`
+```
+DESCRIPTION:
+Retrieve other hardware by name
+
+USAGE:
+    rpk other get <name> [OPTIONS]
+
+ARGUMENTS:
+    <name>     
+
+OPTIONS:
+    -h, --help    Prints help information
+```
+
+## `rpk other describe`
+```
+DESCRIPTION:
+Show detailed information about other hardware
+
+USAGE:
+    rpk other describe <name> [OPTIONS]
+
+ARGUMENTS:
+    <name>     
+
+OPTIONS:
+    -h, --help    Prints help information
+```
+
+## `rpk other set`
+```
+DESCRIPTION:
+Update properties of other hardware
+
+USAGE:
+    rpk other set <name> [OPTIONS]
+
+ARGUMENTS:
+    <name>     
+
+OPTIONS:
+    -h, --help           Prints help information
+        --model                                 
+        --description                           
+```
+
+## `rpk other del`
+```
+DESCRIPTION:
+Delete other hardware
+
+USAGE:
+    rpk other del <name> [OPTIONS]
+
+ARGUMENTS:
+    <name>     
+
+OPTIONS:
+    -h, --help    Prints help information
+```
+
+## `rpk other rename`
+```
+DESCRIPTION:
+Rename other hardware to a new name
+
+USAGE:
+    rpk other rename <name> <new-name> [OPTIONS]
+
+ARGUMENTS:
+    <name>         
+    <new-name>     
+
+OPTIONS:
+    -h, --help    Prints help information
+```
+
+## `rpk other label`
+```
+DESCRIPTION:
+Manage labels on other hardware
+
+USAGE:
+    rpk other label [OPTIONS] <COMMAND>
+
+OPTIONS:
+    -h, --help    Prints help information
+
+COMMANDS:
+    add <name>       Add a label to other hardware     
+    remove <name>    Remove a label from other hardware
+```
+
+## `rpk other label add`
+```
+DESCRIPTION:
+Add a label to other hardware
+
+USAGE:
+    rpk other label add <name> [OPTIONS]
+
+ARGUMENTS:
+    <name>     
+
+OPTIONS:
+    -h, --help             Prints help information
+        --key <KEY>                               
+        --value <VALUE>                           
+```
+
+## `rpk other label remove`
+```
+DESCRIPTION:
+Remove a label from other hardware
+
+USAGE:
+    rpk other label remove <name> [OPTIONS]
+
+ARGUMENTS:
+    <name>     
+
+OPTIONS:
+    -h, --help         Prints help information
+        --key <KEY>                           
+```
+
+## `rpk other tag`
+```
+DESCRIPTION:
+Manage tags on other hardware
+
+USAGE:
+    rpk other tag [OPTIONS] <COMMAND>
+
+OPTIONS:
+    -h, --help    Prints help information
+
+COMMANDS:
+    add <name> <tag>       Add a tag to other hardware     
+    remove <name> <tag>    Remove a tag from other hardware
+```
+
+## `rpk other tag add`
+```
+DESCRIPTION:
+Add a tag to other hardware
+
+USAGE:
+    rpk other tag add <name> <tag> [OPTIONS]
+
+ARGUMENTS:
+    <name>     
+    <tag>      
+
+OPTIONS:
+    -h, --help    Prints help information
+```
+
+## `rpk other tag remove`
+```
+DESCRIPTION:
+Remove a tag from other hardware
+
+USAGE:
+    rpk other tag remove <name> <tag> [OPTIONS]
 
 ARGUMENTS:
     <name>     

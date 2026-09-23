@@ -31,14 +31,20 @@ public class Program {
         var yamlFilePath = Path.Combine(yamlPath, yamlFileName);
 
         if (!File.Exists(yamlFilePath)) {
-            await using var fs = new FileStream(
-                yamlFilePath,
-                FileMode.CreateNew,
-                FileAccess.Write,
-                FileShare.None);
+            try {
+                await using var fs = new FileStream(
+                    yamlFilePath,
+                    FileMode.CreateNew,
+                    FileAccess.Write,
+                    FileShare.None);
 
-            await using var writer = new StreamWriter(fs);
-            await writer.WriteLineAsync("# default config");
+                await using var writer = new StreamWriter(fs);
+                await writer.WriteLineAsync("# default config");
+            }
+            catch (IOException) when (File.Exists(yamlFilePath)) {
+                // Another instance created the file between the existence
+                // check and CreateNew — the config is there, carry on.
+            }
         }
 
         builder.Services.ConfigureHttpJsonOptions(options => {

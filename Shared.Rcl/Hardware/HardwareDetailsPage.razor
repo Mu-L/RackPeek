@@ -9,6 +9,7 @@
 @using RackPeek.Domain.Resources.Servers
 @using RackPeek.Domain.Resources.Switches
 @using RackPeek.Domain.Resources.SystemResources
+@using RackPeek.Domain.Resources.OtherHardware
 @using RackPeek.Domain.Resources.UpsUnits
 @using Shared.Rcl.AccessPoints
 @using Shared.Rcl.Connections
@@ -19,6 +20,7 @@
 @using Shared.Rcl.Servers
 @using Shared.Rcl.Switches
 @using Shared.Rcl.Ups
+@using Shared.Rcl.OtherHardware
 @using Router = RackPeek.Domain.Resources.Routers.Router
 
 @inject IResourceCollection Repo
@@ -80,6 +82,10 @@
             else if (_hardware is Ups ups)
             {
                 <UpsCardComponent Ups="ups" OnDeleted="DeleteCallback"/>
+            }
+            else if (_hardware is Other other)
+            {
+                <OtherCardComponent Other="other" OnDeleted="DeleteCallback"/>
             }
             else
             {
