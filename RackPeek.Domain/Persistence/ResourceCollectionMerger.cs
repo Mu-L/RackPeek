@@ -12,6 +12,7 @@ using RackPeek.Domain.Resources.Routers;
 using RackPeek.Domain.Resources.Servers;
 using RackPeek.Domain.Resources.Services;
 using RackPeek.Domain.Resources.Switches;
+using RackPeek.Domain.Resources.OtherHardware;
 using RackPeek.Domain.Resources.SystemResources;
 using RackPeek.Domain.Resources.UpsUnits;
 
@@ -184,6 +185,9 @@ internal static class ResourcePolymorphismResolver {
 
                 typeInfo.PolymorphismOptions.DerivedTypes.Add(
                     new JsonDerivedType(typeof(Ups), Ups.KindLabel));
+
+                typeInfo.PolymorphismOptions.DerivedTypes.Add(
+                    new JsonDerivedType(typeof(Other), Other.KindLabel));
 
                 typeInfo.PolymorphismOptions.DerivedTypes.Add(
                     new JsonDerivedType(typeof(SystemResource), SystemResource.KindLabel));

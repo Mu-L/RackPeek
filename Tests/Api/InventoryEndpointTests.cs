@@ -848,4 +848,49 @@ public class InventoryEndpointTests(ITestOutputHelper output) : ApiTestBase(outp
         Assert.Contains("team: backend", newYaml);
         Assert.DoesNotContain("env: production", newYaml);
     }
+
+    [Fact]
+    public async Task Merge_Other_Hardware_Persists() {
+        HttpClient client = CreateClient(true);
+
+        var yaml = """
+                   resources:
+                     - kind: Other
+                       name: radio-merge
+                       model: Building Bridge XG
+                       description: Microwave radio bridge
+                   """;
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/inventory",
+            new {
+                Yaml = yaml,
+                mode = "Merge"
+            });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        ImportYamlResponse? result = await response.Content.ReadFromJsonAsync<ImportYamlResponse>();
+
+        Assert.Contains("radio-merge", result!.Added);
+
+        var update = """
+                     resources:
+                       - kind: Other
+                         name: radio-merge
+                         description: Site-to-site connectivity
+                     """;
+
+        HttpResponseMessage response2 = await client.PostAsJsonAsync("/api/inventory",
+            new { yaml = update, mode = "Merge" });
+
+        Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
+
+        ImportYamlResponse? result2 = await response2.Content.ReadFromJsonAsync<ImportYamlResponse>();
+
+        Assert.Contains("radio-merge", result2!.Updated);
+
+        var newYaml = result2.NewYaml["radio-merge"];
+        Assert.Contains("model: Building Bridge XG", newYaml);
+        Assert.Contains("description: Site-to-site connectivity", newYaml);
+    }
 }

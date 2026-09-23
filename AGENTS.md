@@ -6,7 +6,7 @@ This document is the entry point for AI agents (Claude Code, OpenCode, etc.) wor
 
 ## 1. What RackPeek is
 
-RackPeek is a **CLI + Web UI for documenting and managing home-lab / small-scale IT infrastructure** (servers, switches, routers, firewalls, access points, UPS units, desktops, laptops, systems, and services).
+RackPeek is a **CLI + Web UI for documenting and managing home-lab / small-scale IT infrastructure** (servers, switches, routers, firewalls, access points, UPS units, desktops, laptops, other hardware, systems, and services).
 
 - All state is persisted to a **single YAML file** (`config/config.yaml`) — no database.
 - Same domain code powers the CLI binary (`rpk`) and the Blazor Server Web UI.
@@ -170,7 +170,7 @@ Top-level shape:
 
 ```yaml
 resources:
-  - kind: Server | Switch | Firewall | Router | Accesspoint | Desktop | Laptop | Ups | System | Service
+  - kind: Server | Switch | Firewall | Router | Accesspoint | Desktop | Laptop | Ups | Other | System | Service
     name: <unique name within kind>
     tags: [...]
     labels: { key: value }
@@ -185,8 +185,8 @@ Key invariants (see `RackPeek.Domain/Resources/Resource.cs`):
 - `name` is the identity within a `kind`. Don't introduce numeric IDs.
 - `runsOn` relationships are validated by `Resource.CanRunOn<T>`:
   - `Service` may run on a `System`.
-  - `System` may run on hardware (`Server`, `Switch`, `Firewall`, `Router`, `Accesspoint`, `Desktop`, `Laptop`, `Ups`) or on another `System`.
-- "Hardware" is the umbrella term for the eight physical kinds above (`Resource.IsHardware`).
+  - `System` may run on hardware (`Server`, `Switch`, `Firewall`, `Router`, `Accesspoint`, `Desktop`, `Laptop`, `Ups`, `Other`) or on another `System`.
+- "Hardware" is the umbrella term for the nine physical kinds above (`Resource.IsHardware`).
 - Anything that mutates the YAML must go through an `IResourceUseCase<T>` → `IResourceCollection` → repository, never direct file writes.
 
 ### YAML migrations
@@ -213,7 +213,7 @@ The full command tree is documented in `docs/Commands.md` and `docs/CommandIndex
 rpk <kind> <verb> [name] [flags]
 
 kinds:   summary, servers, switches, routers, firewalls, systems,
-         accesspoints, ups, desktops, laptops, services
+         accesspoints, ups, desktops, laptops, other, services
 verbs:   summary, add, list, get, describe, set, del, tree
 sub:     cpu, drive, gpu, nic, port, subnets, labels, tags, rename, …
 ```
