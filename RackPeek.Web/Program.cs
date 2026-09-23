@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting.StaticWebAssets;
 using RackPeek.Domain;
 using RackPeek.Domain.Git;
@@ -46,6 +47,16 @@ public class Program {
                 // check and CreateNew — the config is there, carry on.
             }
         }
+
+        // Persist DataProtection keys next to the config so they live on the
+        // mounted volume: they survive container recreation, and key writes
+        // no longer depend on a writable user profile or /tmp — both of
+        // which are unavailable in hardened Docker setups (#312).
+        var keysPath = Path.Combine(yamlPath, ".dataprotection");
+        Directory.CreateDirectory(keysPath);
+        builder.Services.AddDataProtection()
+            .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
+            .SetApplicationName("RackPeek");
 
         builder.Services.ConfigureHttpJsonOptions(options => {
             options.SerializerOptions.Converters.Add(

@@ -48,10 +48,12 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create shared config directory safely
-RUN mkdir -p /app/config \
-    && chown -R ${APP_UID}:0 /app/config \
-    && chmod -R g=u /app/config
+# Create shared config directory safely, plus an app-owned temp directory:
+# key persistence writes staging files via the process temp dir, and /tmp
+# can be unavailable in hardened/rootless Docker setups (#312).
+RUN mkdir -p /app/config /app/tmp \
+    && chown -R ${APP_UID}:0 /app/config /app/tmp \
+    && chmod -R g=u /app/config /app/tmp
 
 VOLUME ["/app/config"]
 
@@ -70,6 +72,7 @@ RUN if [ -f /usr/local/bin/rpk-dir/RackPeek ]; then \
 # Make sure ASP.NET binds correctly in containers
 ENV ASPNETCORE_URLS=http://+:8080
 ENV RPK_YAML_DIR=/app/config
+ENV TMPDIR=/app/tmp
 
 # Drop privileges
 USER ${APP_UID}
