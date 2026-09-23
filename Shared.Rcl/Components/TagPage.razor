@@ -7,11 +7,13 @@
 
 <PageTitle>Tag: @TagName</PageTitle>
 
-<div class="min-h-screen bg-zinc-950 text-zinc-200 font-mono p-6 space-y-6">
+<div class="min-h-screen bg-zinc-950 text-zinc-200 font-mono p-6 space-y-6"
+     data-testid="tag-page-root">
 
     <!-- Header -->
     <div class="space-y-2">
-        <h1 class="text-lg text-zinc-100">
+        <h1 class="text-lg text-zinc-100"
+            data-testid="tag-page-title">
             Tag: <span class="text-emerald-400">@TagName</span>
         </h1>
     </div>
@@ -22,14 +24,19 @@
     }
     else if (_resources.Count == 0)
     {
-        <div class="text-zinc-500">no resources found for this tag</div>
+        <div class="text-zinc-500"
+             data-testid="tag-page-empty">
+            no resources found for this tag
+        </div>
     }
     else
     {
-        <div class="space-y-3">
+        <div class="space-y-3"
+             data-testid="tag-page-list">
             @foreach (var resource in _resources.OrderBy(r => r.Name))
             {
-                <div class="border border-zinc-800 rounded p-3 bg-zinc-900 hover:border-emerald-700 transition">
+                <div class="border border-zinc-800 rounded p-3 bg-zinc-900 hover:border-emerald-700 transition"
+                     data-testid=@($"tag-page-item-{resource.Name.Replace(" ", "-")}")>
                     <NavLink href="@GetResourceUrl(resource)"
                              class="block hover:text-emerald-300">
 

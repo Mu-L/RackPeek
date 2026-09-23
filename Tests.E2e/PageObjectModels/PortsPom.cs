@@ -50,32 +50,39 @@ public class PortsPom(IPage page) {
     // Connection Modal
     // -------------------------------------------------
 
+    /// <summary>
+    ///     A resource card mounts PortConnectionModal under its ports prefix,
+    ///     so the modal's own test ids are built from "{prefix}-port-group".
+    /// </summary>
+    public ConnectionModalPom ConnectionModalFor(string testIdPrefix)
+        => new(page, $"{testIdPrefix}-port-group");
+
     public ILocator ConnectionModal(string testIdPrefix)
-        => page.GetByTestId($"{testIdPrefix}-port-group-connection-modal-container");
+        => ConnectionModalFor(testIdPrefix).Container;
 
     public ILocator ResourceASelect(string testIdPrefix)
-        => page.GetByTestId($"{testIdPrefix}-port-group-connection-modal-resource-a");
+        => ConnectionModalFor(testIdPrefix).ResourceASelect;
 
     public ILocator GroupASelect(string testIdPrefix)
-        => page.GetByTestId($"{testIdPrefix}-port-group-connection-modal-group-a");
+        => ConnectionModalFor(testIdPrefix).GroupASelect;
 
     public ILocator PortASelect(string testIdPrefix)
-        => page.GetByTestId($"{testIdPrefix}-port-group-connection-modal-port-a");
+        => ConnectionModalFor(testIdPrefix).PortASelect;
 
     public ILocator ResourceBSelect(string testIdPrefix)
-        => page.GetByTestId($"{testIdPrefix}-port-group-connection-modal-resource-b");
+        => ConnectionModalFor(testIdPrefix).ResourceBSelect;
 
     public ILocator GroupBSelect(string testIdPrefix)
-        => page.GetByTestId($"{testIdPrefix}-port-group-connection-modal-group-b");
+        => ConnectionModalFor(testIdPrefix).GroupBSelect;
 
     public ILocator PortBSelect(string testIdPrefix)
-        => page.GetByTestId($"{testIdPrefix}-port-group-connection-modal-port-b");
+        => ConnectionModalFor(testIdPrefix).PortBSelect;
 
     public ILocator SubmitConnection(string testIdPrefix)
-        => page.GetByTestId($"{testIdPrefix}-port-group-connection-modal-submit");
+        => ConnectionModalFor(testIdPrefix).SubmitButton;
 
     public ILocator LabelInput(string testIdPrefix)
-        => page.GetByTestId($"{testIdPrefix}-port-group-connection-modal-label");
+        => ConnectionModalFor(testIdPrefix).LabelInput;
 
     // -------------------------------------------------
     // Assertions
@@ -109,30 +116,9 @@ public class PortsPom(IPage page) {
         string resourceB,
         string groupB,
         string portB,
-        string? label = null) {
-        await ResourceASelect(prefix).SelectOptionAsync(
-            new SelectOptionValue { Label = resourceA });
-
-        await GroupASelect(prefix).SelectOptionAsync(
-            new SelectOptionValue { Label = groupA });
-
-        await PortASelect(prefix).SelectOptionAsync(
-            new SelectOptionValue { Label = portA });
-
-        await ResourceBSelect(prefix).SelectOptionAsync(
-            new SelectOptionValue { Label = resourceB });
-
-        await GroupBSelect(prefix).SelectOptionAsync(
-            new SelectOptionValue { Label = groupB });
-
-        await PortBSelect(prefix).SelectOptionAsync(
-            new SelectOptionValue { Label = portB });
-
-        if (label is not null)
-            await LabelInput(prefix).FillAsync(label);
-
-        await SubmitConnection(prefix).ClickAsync();
-    }
+        string? label = null)
+        => await ConnectionModalFor(prefix).CreateConnectionAsync(
+            resourceA, groupA, portA, resourceB, groupB, portB, label);
 
     // -------------------------------------------------
     // Port Modal Fields
