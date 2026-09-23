@@ -6,6 +6,7 @@ using RackPeek.Domain.Git;
 using RackPeek.Domain.Persistence;
 using RackPeek.Domain.Persistence.Yaml;
 using Shared.Rcl;
+using Shared.Rcl.Docs;
 
 namespace RackPeek.Web.Viewer;
 
@@ -51,6 +52,7 @@ public class Program {
         builder.Services.AddUseCases();
 
         builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+        builder.Services.AddScoped<IDocsContentProvider, HttpDocsContentProvider>();
 
         await builder.Build().RunAsync();
     }
