@@ -21,13 +21,14 @@ public class DeleteResourceUseCase<T>(IResourceCollection repo) : IDeleteResourc
 
         IReadOnlyList<Resource> dependants = await repo.GetDependantsAsync(name);
         foreach (Resource resource in dependants) {
-            resource.RunsOn.Remove(name);
+            resource.RunsOn.RemoveAll(p => p.Equals(name, StringComparison.OrdinalIgnoreCase));
             await repo.UpdateAsync(resource);
         }
 
         IReadOnlyList<Connection> connections = await repo.GetConnectionsAsync();
         foreach (Connection connection in connections) {
-            if (connection.A.Resource == name || connection.B.Resource == name) {
+            if (connection.A.Resource.Equals(name, StringComparison.OrdinalIgnoreCase)
+                || connection.B.Resource.Equals(name, StringComparison.OrdinalIgnoreCase)) {
                 await repo.RemoveConnectionAsync(connection);
             }
         }

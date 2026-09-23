@@ -143,6 +143,47 @@ public class RenameResourceTests(TempYamlCliFixture fs, ITestOutputHelper output
     }
 
     [Fact]
+    public async Task rename_typed_in_different_case_preserves_connection() {
+        await ExecuteAsync("servers", "add", "Case01");
+        await ExecuteAsync("servers", "add", "Case02");
+
+        await ExecuteAsync("servers", "nic", "add", "Case01",
+            "--type", "RJ45", "--speed", "10", "--ports", "2");
+
+        await ExecuteAsync("servers", "nic", "add", "Case02",
+            "--type", "RJ45", "--speed", "10", "--ports", "2");
+
+        await ExecuteAsync("connections", "add",
+            "Case01", "0", "0",
+            "Case02", "0", "0",
+            "--label", "mixed-case-link");
+
+        await ExecuteAsync("servers", "rename", "case01", "Case01-renamed");
+
+        (_, var yaml) = await ExecuteAsync("servers", "get", "Case01-renamed");
+
+        Assert.Contains("name: Case01-renamed", yaml);
+        Assert.Contains("mixed-case-link", yaml);
+        // The connection endpoint should follow the rename, not keep pointing at the old name
+        Assert.Contains("resource: Case01-renamed", yaml);
+    }
+
+    [Fact]
+    public async Task rename_typed_in_different_case_updates_runs_on() {
+        await ExecuteAsync("servers", "add", "Case11");
+        await ExecuteAsync("systems", "add", "sys-case-11");
+        await ExecuteAsync("systems", "set", "sys-case-11", "--runs-on", "Case11");
+
+        await ExecuteAsync("servers", "rename", "case11", "Case12");
+
+        (_, var yaml) = await ExecuteAsync("servers", "get", "Case12");
+
+        Assert.Contains("name: Case12", yaml);
+        // The dependant system should follow the rename
+        Assert.Contains("- Case12", yaml);
+    }
+
+    [Fact]
     public async Task rename_with_special_naming_preserves_connections() {
         await ExecuteAsync("servers", "add", "srv-prod-web-01");
         await ExecuteAsync("servers", "add", "srv-prod-app-01");

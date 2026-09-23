@@ -25,6 +25,8 @@ public abstract class ApiTestBase : IDisposable {
 
         Factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder => {
+                builder.UseSetting("RPK_YAML_DIR", _tempDir);
+
                 builder.ConfigureAppConfiguration((context, configBuilder) => {
                     var baseConfig = new Dictionary<string, string?> {
                         ["RPK_API_KEY"] = "test-key-123"

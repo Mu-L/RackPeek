@@ -81,6 +81,9 @@ public class SystemCardPom(IPage page) {
     public ILocator TypeSelect(string name)
         => Card(name).GetByTestId("system-type-select");
 
+    public ILocator TypeValue(string name)
+        => Card(name).GetByTestId("system-type-value");
+
     public ILocator OsInput(string name)
         => Card(name).GetByTestId("system-os-input");
 
@@ -89,6 +92,16 @@ public class SystemCardPom(IPage page) {
 
     public ILocator RamInput(string name)
         => Card(name).GetByTestId("system-ram-input");
+
+    public ILocator IpInput(string name)
+        => Card(name).GetByTestId("system-ip-input");
+
+    /// <summary>
+    ///     Read-mode IP. Renders the effective IP, which may be inherited from
+    ///     the host rather than set on the system itself.
+    /// </summary>
+    public ILocator IpValue(string name)
+        => Card(name).GetByTestId("system-ip-value");
 
     public ILocator RunsOnButton(string name)
         => Card(name).GetByTestId("system-runs-on-button");

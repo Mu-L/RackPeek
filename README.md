@@ -1,6 +1,6 @@
 [![RackPeek demo](./assets/rackpeek_banner_thin.png)](./assets/rackpeek_banner_thin.png)
 
-![Version](https://img.shields.io/badge/Version-2.0.0-2ea44f) ![Status](https://img.shields.io/badge/Status-Stable-success)
+![Version](https://img.shields.io/badge/Version-2.1.0-2ea44f) ![Status](https://img.shields.io/badge/Status-Stable-success)
 [![Join our Discord](https://img.shields.io/badge/Discord-Join%20Us-7289DA?logo=discord&logoColor=white)](https://discord.gg/egXRPdesee) [![Live Demo](https://img.shields.io/badge/Live%20Demo-Try%20RackPeek%20Online-2ea44f?logo=githubpages&logoColor=white)](https://timmoth.github.io/RackPeek/) [![Docker Hub](https://img.shields.io/badge/Docker%20Hub-rackpeek-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/aptacode/rackpeek/)
 
 RackPeek is a webui & CLI tool for documenting and managing home lab and small-scale IT infrastructure.
@@ -29,11 +29,21 @@ docker run -d \
   aptacode/rackpeek:latest
 
 # Bind mount
+mkdir -p config
+sudo chown 1654:1654 config
 docker run -d \
   --name rackpeek \
   -p 8080:8080 \
-  -v $(pwd)/config:/app/config \
+  -v $(pwd)/config:/app/config:Z \
   aptacode/rackpeek:latest
+
+# RackPeek runs as UID/GID 1654:1654 inside the container, so a bind-mounted
+# host directory must be writable by that user. The :Z suffix is needed on
+# SELinux-enabled systems such as Fedora, RHEL, and CentOS; it can be omitted
+# on systems without SELinux.
+
+# To verify the container user:
+docker exec rackpeek id
 
 # Note - RackPeek stores its state in YAML
 config/

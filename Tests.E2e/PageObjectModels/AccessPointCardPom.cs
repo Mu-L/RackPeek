@@ -119,6 +119,33 @@ public class AccessPointCardPom(IPage page) {
     public async Task SetSpeedAsync(string accessPointName, double speed) =>
         await SpeedInput(accessPointName).FillAsync(speed.ToString(CultureInfo.InvariantCulture));
 
+    public async Task SetNotesAsync(string accessPointName, string notes) =>
+        await NotesEditorTextarea(accessPointName).FillAsync(notes);
+
+    public async Task TypeNotesAsync(string accessPointName, string text) =>
+        await NotesEditorTextarea(accessPointName).PressSequentiallyAsync(
+            text,
+            new LocatorPressSequentiallyOptions { Delay = 30 });
+
+    public async Task TypeNotesLineAfterFirstLineAsync(string accessPointName, string line) {
+        // Place the caret at the end of the first line via setSelectionRange:
+        // Home/End/Control+Home don't move the caret on macOS Chromium, so
+        // keyboard-based positioning silently types at the wrong place there.
+        // The typing itself stays as real key events.
+        ILocator textarea = NotesEditorTextarea(accessPointName);
+        await textarea.FocusAsync();
+
+        await textarea.EvaluateAsync(
+            @"el => {
+                const pos = el.value.indexOf('\n');
+                const at = pos < 0 ? el.value.length : pos;
+                el.setSelectionRange(at, at);
+            }");
+
+        await page.Keyboard.PressAsync("Enter");
+        await TypeNotesAsync(accessPointName, line);
+    }
+
     public async Task SaveAsync(string accessPointName) {
         await SaveButton(accessPointName).ClickAsync();
         await Assertions.Expect(ModelSection(accessPointName)).ToBeVisibleAsync();

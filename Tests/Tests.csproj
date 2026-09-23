@@ -12,15 +12,15 @@
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="JsonSchema.Net" Version="9.2.1"/>
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
-        <PackageReference Include="NSubstitute" Version="5.3.0"/>
+        <PackageReference Include="JsonSchema.Net" Version="9.4.0"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+        <PackageReference Include="NSubstitute" Version="6.2.0"/>
         <PackageReference Include="xunit" Version="2.9.3"/>
-        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5"/>
-        <PackageReference Include="Spectre.Console.Testing" Version="0.56.0" />
-        <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.9" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.8"/>
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.8"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0"/>
+        <PackageReference Include="Spectre.Console.Testing" Version="0.57.2" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.12" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.12"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -39,7 +39,9 @@
         <Folder Include="EndToEnd\ServiceTests\"/>
     </ItemGroup>
     <ItemGroup>
-        <None Include="schemas\**\*.json" CopyToOutputDirectory="PreserveNewest"/>
+        <!-- Validate against the published schemas directly so the test and
+             published copies can never drift apart again (#310, #311). -->
+        <None Include="..\schemas\**\*.json" Link="schemas\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/>
         <None Include="TestConfigs\**\*.yaml" CopyToOutputDirectory="PreserveNewest"/>
         <None Update="TestConfigs\v3\01-server.yaml">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -72,6 +74,9 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
         <None Update="TestConfigs\v3\11-demo-config.yaml">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="TestConfigs\v3\12-other.yaml">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
     </ItemGroup>

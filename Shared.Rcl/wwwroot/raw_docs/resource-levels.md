@@ -42,6 +42,7 @@ network switches, Wi-Fi access points, UPS units, and workstations.
 | **Desktop**      | Desktop workstation          | Custom build, Mac Mini                   |
 | **Laptop**       | Laptop                       | ThinkPad T14s                            |
 | **UPS**          | Uninterruptible power supply | APC SMT1500                              |
+| **Other**        | Anything that doesn't fit an existing category | Microwave radio bridge, KVM switch |
 
 ### Sub-Resources
 

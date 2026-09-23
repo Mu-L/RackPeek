@@ -12,6 +12,7 @@ using RackPeek.Domain.Resources.Routers;
 using RackPeek.Domain.Resources.Servers;
 using RackPeek.Domain.Resources.Services;
 using RackPeek.Domain.Resources.SystemResources;
+using RackPeek.Domain.Resources.OtherHardware;
 using RackPeek.Domain.Resources.UpsUnits;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -134,6 +135,16 @@ public sealed class YamlResourceCollection(
 
             resourceCollection.Resources.Clear();
             resourceCollection.Resources.AddRange(merged);
+
+            List<Connection>? mergedConnections = ConnectionMerger.Merge(
+                resourceCollection.Connections,
+                incomingRoot.Connections,
+                mode);
+
+            if (mergedConnections != null) {
+                resourceCollection.Connections.Clear();
+                resourceCollection.Connections.AddRange(mergedConnections);
+            }
 
             var rootToSave = new YamlRoot {
                 Version = RackPeekConfigMigrationDeserializer.ListOfMigrations.Count,
@@ -407,6 +418,7 @@ public sealed class YamlResourceCollection(
             Laptop => "Laptop",
             AccessPoint => "AccessPoint",
             Ups => "Ups",
+            Other => "Other",
             SystemResource => "System",
             Service => "Service",
             _ => throw new InvalidOperationException($"Unknown resource type: {resource.GetType().Name}")

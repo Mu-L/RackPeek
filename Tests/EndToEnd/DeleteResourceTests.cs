@@ -106,6 +106,53 @@ public class DeleteResourceTests(TempYamlCliFixture fs, ITestOutputHelper output
     }
 
     [Fact]
+    public async Task deleting_resource_typed_in_different_case_removes_dependant_runs_on() {
+        await File.WriteAllTextAsync(Path.Combine(fs.Root, "config.yaml"), "");
+        await ExecuteAsync("servers", "add", "Srv01");
+        await ExecuteAsync("systems", "add", "sys01");
+        await ExecuteAsync("systems", "set", "sys01", "--runs-on", "Srv01");
+
+        (var output, var yaml) = await ExecuteAsync("servers", "del", "srv01");
+
+        Assert.Contains("Server 'srv01' deleted.", output);
+        Assert.Contains("sys01", yaml);
+        // The runs-on reference should be removed even though the name was typed in a different case
+        Assert.DoesNotContain("Srv01", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task deleting_resource_typed_in_different_case_removes_connections() {
+        await File.WriteAllTextAsync(Path.Combine(fs.Root, "config.yaml"), "");
+        await ExecuteAsync("servers", "add", "Srv01");
+        await ExecuteAsync("servers", "add", "Srv02");
+
+        await ExecuteAsync(
+            "servers", "nic", "add", "Srv01",
+            "--type", "RJ45",
+            "--speed", "10",
+            "--ports", "2");
+
+        await ExecuteAsync(
+            "servers", "nic", "add", "Srv02",
+            "--type", "RJ45",
+            "--speed", "10",
+            "--ports", "2");
+
+        await ExecuteAsync(
+            "connections", "add",
+            "Srv01", "0", "0",
+            "Srv02", "0", "0",
+            "--label", "mixed-case-connection");
+
+        (var output, var yaml) = await ExecuteAsync("servers", "del", "srv01");
+
+        Assert.Contains("Server 'srv01' deleted.", output);
+        Assert.Contains("Srv02", yaml);
+        Assert.DoesNotContain("mixed-case-connection", yaml);
+        Assert.DoesNotContain("Srv01", yaml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task deleting_resource_with_multiple_connections_removes_all() {
         await File.WriteAllTextAsync(Path.Combine(fs.Root, "config.yaml"), "");
         await ExecuteAsync("switches", "add", "sw01");

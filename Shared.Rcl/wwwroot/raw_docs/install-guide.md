@@ -58,6 +58,14 @@ http://localhost:8080
 
 This uses a **named volume**, which avoids permission issues and is recommended for most users.
 
+RackPeek stores its ASP.NET DataProtection keys under `config/.dataprotection` on the same volume, so browser sessions survive container upgrades. If you run the container with a **read-only root filesystem**, also mount a tmpfs for the app's temp directory:
+
+```yaml
+    read_only: true
+    tmpfs:
+      - /app/tmp:uid=1654,gid=0
+```
+
 ---
 
 ## Portainer

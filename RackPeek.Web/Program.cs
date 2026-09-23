@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting.StaticWebAssets;
 using RackPeek.Domain;
 using RackPeek.Domain.Git;
@@ -8,6 +9,8 @@ using RackPeek.Domain.Persistence.Yaml;
 using RackPeek.Web.Api;
 using RackPeek.Web.Components;
 using Shared.Rcl;
+using Shared.Rcl.Docs;
+using Shared.Rcl.Servers;
 
 namespace RackPeek.Web;
 
@@ -31,15 +34,31 @@ public class Program {
         var yamlFilePath = Path.Combine(yamlPath, yamlFileName);
 
         if (!File.Exists(yamlFilePath)) {
-            await using var fs = new FileStream(
-                yamlFilePath,
-                FileMode.CreateNew,
-                FileAccess.Write,
-                FileShare.None);
+            try {
+                await using var fs = new FileStream(
+                    yamlFilePath,
+                    FileMode.CreateNew,
+                    FileAccess.Write,
+                    FileShare.None);
 
-            await using var writer = new StreamWriter(fs);
-            await writer.WriteLineAsync("# default config");
+                await using var writer = new StreamWriter(fs);
+                await writer.WriteLineAsync("# default config");
+            }
+            catch (IOException) when (File.Exists(yamlFilePath)) {
+                // Another instance created the file between the existence
+                // check and CreateNew — the config is there, carry on.
+            }
         }
+
+        // Persist DataProtection keys next to the config so they live on the
+        // mounted volume: they survive container recreation, and key writes
+        // no longer depend on a writable user profile or /tmp — both of
+        // which are unavailable in hardened Docker setups (#312).
+        var keysPath = Path.Combine(yamlPath, ".dataprotection");
+        Directory.CreateDirectory(keysPath);
+        builder.Services.AddDataProtection()
+            .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
+            .SetApplicationName("RackPeek");
 
         builder.Services.ConfigureHttpJsonOptions(options => {
             options.SerializerOptions.Converters.Add(
@@ -47,12 +66,7 @@ public class Program {
         });
         builder.Services.AddScoped<ITextFileStore, PhysicalTextFileStore>();
 
-        builder.Services.AddScoped(sp => {
-            NavigationManager nav = sp.GetRequiredService<NavigationManager>();
-            return new HttpClient {
-                BaseAddress = new Uri(nav.BaseUri)
-            };
-        });
+        builder.Services.AddScoped<IDocsContentProvider, StaticWebAssetDocsContentProvider>();
 
         builder.Services.AddGitServices(builder.Configuration, yamlPath);
 
@@ -96,7 +110,8 @@ public class Program {
         app.MapStaticAssets();
 
         app.MapRazorComponents<App>()
-            .AddInteractiveServerRenderMode();
+            .AddInteractiveServerRenderMode()
+            .AddAdditionalAssemblies(typeof(ServersListPage).Assembly);
 
         return app;
     }

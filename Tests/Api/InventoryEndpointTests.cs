@@ -848,4 +848,175 @@ public class InventoryEndpointTests(ITestOutputHelper output) : ApiTestBase(outp
         Assert.Contains("team: backend", newYaml);
         Assert.DoesNotContain("env: production", newYaml);
     }
+
+    [Fact]
+    public async Task Import_Persists_And_Updates_Connections() {
+        HttpClient client = CreateClient(true);
+
+        var initial = """
+                      version: 3
+                      resources:
+                      - kind: Switch
+                        ports:
+                        - type: rj45
+                          speed: 1
+                          count: 8
+                        name: switch1
+                      - kind: Server
+                        ports:
+                        - type: rj45
+                          speed: 1
+                          count: 1
+                        name: server1
+                      connections:
+                      - a:
+                          resource: server1
+                          portGroup: 0
+                          portIndex: 0
+                        b:
+                          resource: switch1
+                          portGroup: 0
+                          portIndex: 0
+                      """;
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/inventory",
+            new { yaml = initial, mode = "Merge" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        ImportYamlResponse? result = await response.Content.ReadFromJsonAsync<ImportYamlResponse>();
+        Assert.Single(result!.ConnectionsAdded);
+        Assert.Empty(result.ConnectionsRemoved);
+
+        // Re-importing the same config is idempotent
+        HttpResponseMessage response2 = await client.PostAsJsonAsync("/api/inventory",
+            new { yaml = initial, dryRun = true, mode = "Merge" });
+        ImportYamlResponse? result2 = await response2.Content.ReadFromJsonAsync<ImportYamlResponse>();
+        Assert.Empty(result2!.ConnectionsAdded);
+        Assert.Empty(result2.ConnectionsRemoved);
+
+        // Adjusting the switch port replaces the old connection (#308)
+        var adjusted = initial.Replace(
+            """
+                resource: switch1
+                portGroup: 0
+                portIndex: 0
+            """,
+            """
+                resource: switch1
+                portGroup: 0
+                portIndex: 3
+            """);
+
+        HttpResponseMessage response3 = await client.PostAsJsonAsync("/api/inventory",
+            new { yaml = adjusted, mode = "Merge" });
+        ImportYamlResponse? result3 = await response3.Content.ReadFromJsonAsync<ImportYamlResponse>();
+
+        Assert.Single(result3!.ConnectionsAdded);
+        Assert.Contains("switch1[0.3]", result3.ConnectionsAdded[0]);
+        Assert.Single(result3.ConnectionsRemoved);
+        Assert.Contains("switch1[0.0]", result3.ConnectionsRemoved[0]);
+
+        // And the adjusted state is now stable
+        HttpResponseMessage response4 = await client.PostAsJsonAsync("/api/inventory",
+            new { yaml = adjusted, dryRun = true, mode = "Merge" });
+        ImportYamlResponse? result4 = await response4.Content.ReadFromJsonAsync<ImportYamlResponse>();
+        Assert.Empty(result4!.ConnectionsAdded);
+        Assert.Empty(result4.ConnectionsRemoved);
+    }
+
+    [Fact]
+    public async Task Import_Without_Connections_Section_Keeps_Existing_Connections() {
+        HttpClient client = CreateClient(true);
+
+        var initial = """
+                      version: 3
+                      resources:
+                      - kind: Switch
+                        ports:
+                        - type: rj45
+                          speed: 1
+                          count: 8
+                        name: sw-keep
+                      - kind: Server
+                        ports:
+                        - type: rj45
+                          speed: 1
+                          count: 1
+                        name: srv-keep
+                      connections:
+                      - a:
+                          resource: srv-keep
+                          portGroup: 0
+                          portIndex: 0
+                        b:
+                          resource: sw-keep
+                          portGroup: 0
+                          portIndex: 0
+                      """;
+
+        await client.PostAsJsonAsync("/api/inventory", new { yaml = initial, mode = "Merge" });
+
+        // An import that says nothing about connections must not drop them
+        var resourcesOnly = """
+                            resources:
+                            - kind: Server
+                              name: srv-keep
+                              notes: updated
+                            """;
+
+        await client.PostAsJsonAsync("/api/inventory", new { yaml = resourcesOnly, mode = "Merge" });
+
+        // The original connection still exists: re-importing the initial
+        // config reports no connection changes.
+        HttpResponseMessage check = await client.PostAsJsonAsync("/api/inventory",
+            new { yaml = initial, dryRun = true, mode = "Merge" });
+        ImportYamlResponse? result = await check.Content.ReadFromJsonAsync<ImportYamlResponse>();
+        Assert.Empty(result!.ConnectionsAdded);
+        Assert.Empty(result.ConnectionsRemoved);
+    }
+
+    [Fact]
+    public async Task Merge_Other_Hardware_Persists() {
+        HttpClient client = CreateClient(true);
+
+        var yaml = """
+                   resources:
+                     - kind: Other
+                       name: radio-merge
+                       model: Building Bridge XG
+                       description: Microwave radio bridge
+                   """;
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/inventory",
+            new {
+                Yaml = yaml,
+                mode = "Merge"
+            });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        ImportYamlResponse? result = await response.Content.ReadFromJsonAsync<ImportYamlResponse>();
+
+        Assert.Contains("radio-merge", result!.Added);
+
+        var update = """
+                     resources:
+                       - kind: Other
+                         name: radio-merge
+                         description: Site-to-site connectivity
+                     """;
+
+        HttpResponseMessage response2 = await client.PostAsJsonAsync("/api/inventory",
+            new { yaml = update, mode = "Merge" });
+
+        Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
+
+        ImportYamlResponse? result2 = await response2.Content.ReadFromJsonAsync<ImportYamlResponse>();
+
+        Assert.Contains("radio-merge", result2!.Updated);
+
+        var newYaml = result2.NewYaml["radio-merge"];
+        Assert.Contains("model: Building Bridge XG", newYaml);
+        Assert.Contains("description: Site-to-site connectivity", newYaml);
+    }
 }
