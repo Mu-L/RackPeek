@@ -81,6 +81,9 @@ public class SystemCardPom(IPage page) {
     public ILocator TypeSelect(string name)
         => Card(name).GetByTestId("system-type-select");
 
+    public ILocator TypeValue(string name)
+        => Card(name).GetByTestId("system-type-value");
+
     public ILocator OsInput(string name)
         => Card(name).GetByTestId("system-os-input");
 

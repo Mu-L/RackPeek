@@ -119,6 +119,40 @@ public class SystemCardTests(
         }
     }
 
+    [Fact]
+    public async Task Saving_Without_Touching_Type_Persists_The_Displayed_Default() {
+        (IBrowserContext context, IPage page) = await CreatePageAsync();
+        var name = $"e2e-sys-type-{Guid.NewGuid():N}"[..16];
+
+        try {
+            await page.GotoAsync($"{_fixture.BaseUrl}/systems/list");
+
+            var list = new SystemsListPom(page);
+            await list.AddSystemAsync(name);
+
+            if (!page.Url.Contains($"/resources/systems/{name}",
+                    StringComparison.OrdinalIgnoreCase))
+                await list.OpenSystemAsync(name);
+
+            var card = new SystemCardPom(page);
+            await card.AssertVisibleAsync(name);
+
+            // The dropdown shows 'baremetal' for a fresh system; save without
+            // touching it — the displayed default must actually persist (#306).
+            await card.BeginEditAsync(name);
+            await card.SaveAsync(name);
+
+            await Assertions.Expect(card.TypeValue(name)).ToHaveTextAsync("baremetal");
+
+            await page.ReloadAsync();
+            await card.AssertVisibleAsync(name);
+            await Assertions.Expect(card.TypeValue(name)).ToHaveTextAsync("baremetal");
+        }
+        finally {
+            await context.CloseAsync();
+        }
+    }
+
     // ============================================================
     // Cancel Edit
     // ============================================================
