@@ -135,6 +135,21 @@
     - [tag](docs/Commands.md#rpk-ups-tag) - Manage tags on a UPS unit
       - [add](docs/Commands.md#rpk-ups-tag-add) - Add a tag to a UPS unit
       - [remove](docs/Commands.md#rpk-ups-tag-remove) - Remove a tag from a UPS unit
+  - [other](docs/Commands.md#rpk-other) - Manage other hardware that doesn't fit an existing category
+    - [summary](docs/Commands.md#rpk-other-summary) - Show a hardware report for all other hardware
+    - [add](docs/Commands.md#rpk-other-add) - Add new other hardware
+    - [list](docs/Commands.md#rpk-other-list) - List all other hardware
+    - [get](docs/Commands.md#rpk-other-get) - Retrieve other hardware by name
+    - [describe](docs/Commands.md#rpk-other-describe) - Show detailed information about other hardware
+    - [set](docs/Commands.md#rpk-other-set) - Update properties of other hardware
+    - [del](docs/Commands.md#rpk-other-del) - Delete other hardware
+    - [rename](docs/Commands.md#rpk-other-rename) - Rename other hardware to a new name
+    - [label](docs/Commands.md#rpk-other-label) - Manage labels on other hardware
+      - [add](docs/Commands.md#rpk-other-label-add) - Add a label to other hardware
+      - [remove](docs/Commands.md#rpk-other-label-remove) - Remove a label from other hardware
+    - [tag](docs/Commands.md#rpk-other-tag) - Manage tags on other hardware
+      - [add](docs/Commands.md#rpk-other-tag-add) - Add a tag to other hardware
+      - [remove](docs/Commands.md#rpk-other-tag-remove) - Remove a tag from other hardware
   - [desktops](docs/Commands.md#rpk-desktops) - Manage desktop computers and their components
     - [add](docs/Commands.md#rpk-desktops-add) - Add a new desktop
     - [list](docs/Commands.md#rpk-desktops-list) - List all desktops
