@@ -207,6 +207,33 @@
             await OnDeleted.InvokeAsync(Other.Name);
     }
 
+    bool _renameOpen;
+
+    void OpenRename()
+    {
+        _renameOpen = true;
+    }
+
+    async Task HandleRenameSubmit(string newName)
+    {
+        await RenameUseCase.ExecuteAsync(Other.Name, newName);
+        Nav.NavigateTo($"resources/hardware/{Uri.EscapeDataString(newName)}");
+    }
+
+    bool _cloneOpen;
+
+    void OpenClone()
+    {
+        _cloneOpen = true;
+    }
+
+    async Task HandleCloneSubmit(string newName)
+    {
+        await CloneUseCase.ExecuteAsync(Other.Name, newName);
+
+        Nav.NavigateTo($"resources/hardware/{Uri.EscapeDataString(newName)}");
+    }
+
     public class OtherEditModel
     {
         public string? Model { get; set; }
@@ -222,41 +249,6 @@
                 Notes = other.Notes
             };
         }
-    }
-
-}
-
-@code
-{
-    bool _renameOpen;
-
-    void OpenRename()
-    {
-        _renameOpen = true;
-    }
-
-    async Task HandleRenameSubmit(string newName)
-    {
-        await RenameUseCase.ExecuteAsync(Other.Name, newName);
-        Nav.NavigateTo($"resources/hardware/{Uri.EscapeDataString(newName)}");
-    }
-
-}
-
-@code
-{
-    bool _cloneOpen;
-
-    void OpenClone()
-    {
-        _cloneOpen = true;
-    }
-
-    async Task HandleCloneSubmit(string newName)
-    {
-        await CloneUseCase.ExecuteAsync(Other.Name, newName);
-
-        Nav.NavigateTo($"resources/hardware/{Uri.EscapeDataString(newName)}");
     }
 
 }
