@@ -1,4 +1,3 @@
-const { chromium } = require('playwright');
 const fs = require('fs');
 
 const URLS = [
@@ -14,7 +13,19 @@ const URLS = [
   "http://localhost:5287/services/list"
 ];
 
-(async () => {
+function screenshotFilename(url) {
+  const parsed = new URL(url);
+  const path = parsed.pathname === "/"
+    ? ""
+    : parsed.pathname.replace(/^\/+|\/+$/g, "").replace(/\//g, "_");
+  const port = parsed.port ? `_${parsed.port}` : "";
+  const name = `${parsed.hostname}${port}${path ? `_${path}` : ""}`;
+
+  return `${name.replace(/[^a-zA-Z0-9._-]/g, "_")}.png`;
+}
+
+async function capture() {
+  const { chromium } = require('playwright');
   const browser = await chromium.launch();
   const page = await browser.newPage({
     viewport: { width: 1366, height: 768 }
@@ -24,7 +35,7 @@ const URLS = [
     fs.mkdirSync("./webui_screenshots");
 
   for (const url of URLS) {
-    const filename = url.replace(/^https?:\/\//, '').replace(/\//g, '_') + ".png";
+    const filename = screenshotFilename(url);
     console.log("Capturing", url);
 
     // Diagram routes are taller than the standard viewport; stretch it so
@@ -71,4 +82,13 @@ const URLS = [
   }
 
   await browser.close();
-})();
+}
+
+if (require.main === module) {
+  capture().catch(error => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}
+
+module.exports = { capture, screenshotFilename };
