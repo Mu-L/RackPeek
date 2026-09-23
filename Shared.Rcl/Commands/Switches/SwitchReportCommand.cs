@@ -1,30 +1,26 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using RackPeek.Domain.Resources.Switches;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace Shared.Rcl.Commands.Switches;
 
 public class SwitchReportCommand(
-    ILogger<SwitchReportCommand> logger,
     IServiceProvider serviceProvider
-) : AsyncCommand
-{
-    public override async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken)
-    {
-        using var scope = serviceProvider.CreateScope();
-        var useCase = scope.ServiceProvider.GetRequiredService<SwitchHardwareReportUseCase>();
+) : AsyncCommand {
+    protected override async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken) {
+        using IServiceScope scope = serviceProvider.CreateScope();
+        SwitchHardwareReportUseCase useCase = scope.ServiceProvider.GetRequiredService<SwitchHardwareReportUseCase>();
 
-        var report = await useCase.ExecuteAsync();
+        SwitchHardwareReport report = await useCase.ExecuteAsync();
 
-        if (report.Switches.Count == 0)
-        {
+        if (report.Switches.Count == 0) {
             AnsiConsole.MarkupLine("[yellow]No switches found.[/]");
             return 0;
         }
 
-        var table = new Table()
+        Table table = new Table()
             .Border(TableBorder.Rounded)
             .AddColumn("Name")
             .AddColumn("Model")
@@ -34,15 +30,15 @@ public class SwitchReportCommand(
             .AddColumn("Max Speed")
             .AddColumn("Port Summary");
 
-        foreach (var s in report.Switches)
+        foreach (SwitchHardwareRow s in report.Switches)
             table.AddRow(
-                s.Name,
-                s.Model,
+                s.Name.EscapeMarkup(),
+                s.Model.EscapeMarkup(),
                 s.Managed ? "[green]yes[/]" : "[red]no[/]",
                 s.Poe ? "[green]yes[/]" : "[red]no[/]",
                 s.TotalPorts.ToString(),
                 $"{s.MaxPortSpeedGb}G",
-                s.PortSummary
+                s.PortSummary.EscapeMarkup()
             );
 
         AnsiConsole.Write(table);

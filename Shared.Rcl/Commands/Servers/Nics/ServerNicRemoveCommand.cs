@@ -1,26 +1,23 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.Servers;
-using RackPeek.Domain.UseCases.Nics;
+using RackPeek.Domain.UseCases.Ports;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace Shared.Rcl.Commands.Servers.Nics;
 
-public class ServerNicRemoveSettings : ServerNameSettings
-{
+public class ServerNicRemoveSettings : ServerNameSettings {
     [CommandOption("--index <INDEX>")] public int Index { get; set; }
 }
 
 public class ServerNicRemoveCommand(IServiceProvider serviceProvider)
-    : AsyncCommand<ServerNicRemoveSettings>
-{
-    public override async Task<int> ExecuteAsync(
+    : AsyncCommand<ServerNicRemoveSettings> {
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ServerNicRemoveSettings settings,
-        CancellationToken cancellationToken)
-    {
-        using var scope = serviceProvider.CreateScope();
-        var useCase = scope.ServiceProvider.GetRequiredService<IRemoveNicUseCase<Server>>();
+        CancellationToken cancellationToken) {
+        using IServiceScope scope = serviceProvider.CreateScope();
+        IRemovePortUseCase<Server> useCase = scope.ServiceProvider.GetRequiredService<IRemovePortUseCase<Server>>();
 
         await useCase.ExecuteAsync(
             settings.Name,

@@ -2,45 +2,41 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using RackPeek.Domain;
+using RackPeek.Domain.Git;
 using RackPeek.Domain.Persistence;
 using RackPeek.Domain.Persistence.Yaml;
 using Shared.Rcl;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace RackPeek.Web.Viewer;
 
-public class Program
-{
-    public static async Task Main(string[] args)
-    {
+public class Program {
+    public static async Task Main(string[] args) {
         var builder = WebAssemblyHostBuilder.CreateDefault(args);
         builder.RootComponents.Add<App>("#app");
         builder.RootComponents.Add<HeadOutlet>("head::after");
 
-        var services = builder.Services;
+        IServiceCollection services = builder.Services;
 
 
-        builder.Services.AddScoped(sp =>
-        {
-            var nav = sp.GetRequiredService<NavigationManager>();
-            return new HttpClient
-            {
+        builder.Services.AddScoped(sp => {
+            NavigationManager nav = sp.GetRequiredService<NavigationManager>();
+            return new HttpClient {
                 BaseAddress = new Uri(nav.BaseUri)
             };
         });
 
+        builder.Services.AddGitServices(builder.Configuration);
 
         builder.Services.AddScoped<ITextFileStore, WasmTextFileStore>();
 
         var resources = new ResourceCollection();
         builder.Services.AddSingleton(resources);
-        
+
         var yamlDir = builder.Configuration.GetValue<string>("RPK_YAML_DIR") ?? "config";
         var yamlFilePath = $"{yamlDir}/config.yaml";
         builder.Services.AddScoped<RackPeekConfigMigrationDeserializer>();
         builder.Services.AddScoped<IResourceYamlMigrationService, ResourceYamlMigrationService>();
-        
+
         builder.Services.AddScoped<IResourceCollection>(sp =>
             new YamlResourceCollection(
                 yamlFilePath,

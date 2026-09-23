@@ -33,6 +33,12 @@ services:
     volumes:
       - rackpeek-config:/app/config
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
 
 volumes:
   rackpeek-config:

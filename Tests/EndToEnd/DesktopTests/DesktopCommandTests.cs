@@ -5,10 +5,8 @@ namespace Tests.EndToEnd.DesktopTests;
 
 [Collection("Yaml CLI tests")]
 public class DesktopCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputHelper)
-    : IClassFixture<TempYamlCliFixture>
-{
-    private async Task<(string, string)> ExecuteAsync(params string[] args)
-    {
+    : IClassFixture<TempYamlCliFixture> {
+    private async Task<(string, string)> ExecuteAsync(params string[] args) {
         var output = await YamlCliTestHost.RunAsync(
             args,
             fs.Root,
@@ -21,14 +19,13 @@ public class DesktopCommandTests(TempYamlCliFixture fs, ITestOutputHelper output
     }
 
     [Fact]
-    public async Task describe_returns_detailed_information()
-    {
+    public async Task describe_returns_detailed_information() {
         // given 
         await ExecuteAsync("desktops", "add", "workstation01");
         await ExecuteAsync("desktops", "set", "workstation01", "--model", "Dell Precision 7960");
 
         // then
-        var (output, _) = await ExecuteAsync("desktops", "describe", "workstation01");
+        (var output, var _) = await ExecuteAsync("desktops", "describe", "workstation01");
 
         // when
         Assert.Contains("Name:", output);
@@ -38,8 +35,7 @@ public class DesktopCommandTests(TempYamlCliFixture fs, ITestOutputHelper output
     }
 
     [Fact]
-    public async Task help_outputs_do_not_throw()
-    {
+    public async Task help_outputs_do_not_throw() {
         Assert.Contains("Manage desktop computers", (await ExecuteAsync("desktops", "--help")).Item1);
         Assert.Contains("Add a new desktop", (await ExecuteAsync("desktops", "add", "--help")).Item1);
         Assert.Contains("Retrieve a desktop", (await ExecuteAsync("desktops", "get", "--help")).Item1);
@@ -62,5 +58,16 @@ public class DesktopCommandTests(TempYamlCliFixture fs, ITestOutputHelper output
 
         Assert.Contains("Manage network interface cards", (await ExecuteAsync("desktops", "nic", "--help")).Item1);
         Assert.Contains("Add a NIC", (await ExecuteAsync("desktops", "nic", "add", "--help")).Item1);
+        Assert.Contains("Rename a desktop", (await ExecuteAsync("desktops", "rename", "--help")).Item1);
+    }
+
+    [Fact]
+    public async Task rename_successfully_updates_name() {
+        await ExecuteAsync("desktops", "add", "workstation01");
+
+        (var output, var yaml) = await ExecuteAsync("desktops", "rename", "workstation01", "workstation01-new");
+
+        Assert.Equal("Desktop 'workstation01' renamed to 'workstation01-new'.\n", output);
+        Assert.Contains("name: workstation01-new", yaml);
     }
 }

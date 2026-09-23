@@ -5,10 +5,8 @@ namespace Tests.EndToEnd.SystemTests;
 
 [Collection("Yaml CLI tests")]
 public class SystemCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputHelper)
-    : IClassFixture<TempYamlCliFixture>
-{
-    private async Task<(string, string)> ExecuteAsync(params string[] args)
-    {
+    : IClassFixture<TempYamlCliFixture> {
+    private async Task<(string, string)> ExecuteAsync(params string[] args) {
         var output = await YamlCliTestHost.RunAsync(
             args,
             fs.Root,
@@ -21,12 +19,11 @@ public class SystemCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputH
     }
 
     [Fact]
-    public async Task describe_outputs_expected_information()
-    {
+    public async Task describe_outputs_expected_information() {
         await ExecuteAsync("systems", "add", "sys01");
         await ExecuteAsync("systems", "set", "sys01", "--type", "vm", "--os", "ubuntu", "--cores", "4", "--ram", "16");
 
-        var (output, _) = await ExecuteAsync("systems", "describe", "sys01");
+        (var output, var _) = await ExecuteAsync("systems", "describe", "sys01");
 
         Assert.Contains("sys01", output);
         Assert.Contains("vm", output);
@@ -36,8 +33,7 @@ public class SystemCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputH
     }
 
     [Fact]
-    public async Task help_commands_do_not_throw()
-    {
+    public async Task help_commands_do_not_throw() {
         Assert.Contains("Manage systems", (await ExecuteAsync("systems", "--help")).Item1);
         Assert.Contains("Add a new system", (await ExecuteAsync("systems", "add", "--help")).Item1);
         Assert.Contains("List all systems", (await ExecuteAsync("systems", "list", "--help")).Item1);
@@ -46,5 +42,16 @@ public class SystemCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputH
         Assert.Contains("Update properties", (await ExecuteAsync("systems", "set", "--help")).Item1);
         Assert.Contains("Delete a system", (await ExecuteAsync("systems", "del", "--help")).Item1);
         Assert.Contains("Display the dependency tree", (await ExecuteAsync("systems", "tree", "--help")).Item1);
+        Assert.Contains("Rename a system", (await ExecuteAsync("systems", "rename", "--help")).Item1);
+    }
+
+    [Fact]
+    public async Task rename_successfully_updates_name() {
+        await ExecuteAsync("systems", "add", "sys01");
+
+        (var output, var yaml) = await ExecuteAsync("systems", "rename", "sys01", "sys01-new");
+
+        Assert.Equal("System 'sys01' renamed to 'sys01-new'.\n", output);
+        Assert.Contains("name: sys01-new", yaml);
     }
 }

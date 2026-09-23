@@ -14,10 +14,8 @@ public record DesktopDescription(
     Dictionary<string, string> Labels
 );
 
-public class DescribeDesktopUseCase(IResourceCollection repository) : IUseCase
-{
-    public async Task<DesktopDescription> ExecuteAsync(string name)
-    {
+public class DescribeDesktopUseCase(IResourceCollection repository) : IUseCase {
+    public async Task<DesktopDescription> ExecuteAsync(string name) {
         name = Normalize.HardwareName(name);
         ThrowIfInvalid.ResourceName(name);
 
@@ -35,7 +33,7 @@ public class DescribeDesktopUseCase(IResourceCollection repository) : IUseCase
             desktop.Cpus?.Count ?? 0,
             ramSummary,
             desktop.Drives?.Count ?? 0,
-            desktop.Nics?.Count ?? 0,
+            desktop.Ports?.Count ?? 0,
             desktop.Gpus?.Count ?? 0,
             desktop.Labels
         );

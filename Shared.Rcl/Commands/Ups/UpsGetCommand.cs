@@ -1,38 +1,36 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.UpsUnits;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace Shared.Rcl.Commands.Ups;
 
 public class UpsGetCommand(IServiceProvider provider)
-    : AsyncCommand
-{
-    public override async Task<int> ExecuteAsync(
+    : AsyncCommand {
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
-        CancellationToken cancellationToken)
-    {
-        using var scope = provider.CreateScope();
-        var useCase = scope.ServiceProvider.GetRequiredService<UpsHardwareReportUseCase>();
+        CancellationToken cancellationToken) {
+        using IServiceScope scope = provider.CreateScope();
+        UpsHardwareReportUseCase useCase = scope.ServiceProvider.GetRequiredService<UpsHardwareReportUseCase>();
 
-        var report = await useCase.ExecuteAsync();
+        UpsHardwareReport report = await useCase.ExecuteAsync();
 
-        if (report.UpsUnits.Count == 0)
-        {
+        if (report.UpsUnits.Count == 0) {
             AnsiConsole.MarkupLine("[yellow]No UPS units found.[/]");
             return 0;
         }
 
-        var table = new Table()
+        Table table = new Table()
             .Border(TableBorder.Rounded)
             .AddColumn("Name")
             .AddColumn("Model")
             .AddColumn("VA");
 
-        foreach (var ups in report.UpsUnits)
+        foreach (UpsHardwareRow ups in report.UpsUnits)
             table.AddRow(
-                ups.Name,
-                ups.Model,
+                ups.Name.EscapeMarkup(),
+                ups.Model.EscapeMarkup(),
                 ups.Va.ToString()
             );
 

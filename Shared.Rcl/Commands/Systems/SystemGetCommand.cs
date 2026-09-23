@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.SystemResources.UseCases;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -7,24 +8,21 @@ namespace Shared.Rcl.Commands.Systems;
 
 public class SystemGetCommand(
     IServiceProvider serviceProvider
-) : AsyncCommand
-{
-    public override async Task<int> ExecuteAsync(
+) : AsyncCommand {
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
-        CancellationToken cancellationToken)
-    {
-        using var scope = serviceProvider.CreateScope();
-        var useCase = scope.ServiceProvider.GetRequiredService<SystemReportUseCase>();
+        CancellationToken cancellationToken) {
+        using IServiceScope scope = serviceProvider.CreateScope();
+        SystemReportUseCase useCase = scope.ServiceProvider.GetRequiredService<SystemReportUseCase>();
 
-        var report = await useCase.ExecuteAsync();
+        SystemReport report = await useCase.ExecuteAsync();
 
-        if (report.Systems.Count == 0)
-        {
+        if (report.Systems.Count == 0) {
             AnsiConsole.MarkupLine("[yellow]No systems found.[/]");
             return 0;
         }
 
-        var table = new Table()
+        Table table = new Table()
             .Border(TableBorder.Rounded)
             .AddColumn("Name")
             .AddColumn("Type")
@@ -34,15 +32,15 @@ public class SystemGetCommand(
             .AddColumn("Storage (GB)")
             .AddColumn("Runs On");
 
-        foreach (var s in report.Systems)
+        foreach (SystemReportRow s in report.Systems)
             table.AddRow(
-                s.Name,
-                s.Type ?? "Unknown",
-                s.Os ?? "Unknown",
+                s.Name.EscapeMarkup(),
+                (s.Type ?? "Unknown").EscapeMarkup(),
+                (s.Os ?? "Unknown").EscapeMarkup(),
                 s.Cores.ToString(),
                 s.RamGb.ToString(),
                 s.TotalStorageGb.ToString(),
-                string.Join(", ", s.RunsOn) ?? "Unkown"
+                (string.Join(", ", s.RunsOn) ?? "Unkown").EscapeMarkup()
             );
 
         AnsiConsole.Write(table);

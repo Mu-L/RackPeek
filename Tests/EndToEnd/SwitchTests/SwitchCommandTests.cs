@@ -5,10 +5,8 @@ namespace Tests.EndToEnd.SwitchTests;
 
 [Collection("Yaml CLI tests")]
 public class SwitchCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputHelper)
-    : IClassFixture<TempYamlCliFixture>
-{
-    private async Task<(string, string)> ExecuteAsync(params string[] args)
-    {
+    : IClassFixture<TempYamlCliFixture> {
+    private async Task<(string, string)> ExecuteAsync(params string[] args) {
         var output = await YamlCliTestHost.RunAsync(
             args,
             fs.Root,
@@ -21,12 +19,11 @@ public class SwitchCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputH
     }
 
     [Fact]
-    public async Task describe_outputs_expected_information()
-    {
+    public async Task describe_outputs_expected_information() {
         await ExecuteAsync("switches", "add", "sw01");
         await ExecuteAsync("switches", "set", "sw01", "--Model", "Netgear GS108", "--managed", "true", "--poe", "true");
 
-        var (output, _) = await ExecuteAsync("switches", "describe", "sw01");
+        (var output, var _) = await ExecuteAsync("switches", "describe", "sw01");
 
         Assert.Contains("sw01", output);
         Assert.Contains("Netgear GS108", output);
@@ -35,8 +32,7 @@ public class SwitchCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputH
     }
 
     [Fact]
-    public async Task help_commands_do_not_throw()
-    {
+    public async Task help_commands_do_not_throw() {
         Assert.Contains("Manage network switches", (await ExecuteAsync("switches", "--help")).Item1);
         Assert.Contains("Add a new network switch", (await ExecuteAsync("switches", "add", "--help")).Item1);
         Assert.Contains("List all switches", (await ExecuteAsync("switches", "list", "--help")).Item1);
@@ -50,5 +46,16 @@ public class SwitchCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputH
         Assert.Contains("Add a port", (await ExecuteAsync("switches", "port", "add", "--help")).Item1);
         Assert.Contains("Update a switch port", (await ExecuteAsync("switches", "port", "set", "--help")).Item1);
         Assert.Contains("Remove a port", (await ExecuteAsync("switches", "port", "del", "--help")).Item1);
+        Assert.Contains("Rename a switch", (await ExecuteAsync("switches", "rename", "--help")).Item1);
+    }
+
+    [Fact]
+    public async Task rename_successfully_updates_name() {
+        await ExecuteAsync("switches", "add", "sw01");
+
+        (var output, var yaml) = await ExecuteAsync("switches", "rename", "sw01", "sw01-new");
+
+        Assert.Equal("Switch 'sw01' renamed to 'sw01-new'.\n", output);
+        Assert.Contains("name: sw01-new", yaml);
     }
 }

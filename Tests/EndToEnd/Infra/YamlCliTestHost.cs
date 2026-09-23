@@ -9,26 +9,22 @@ using Xunit.Abstractions;
 
 namespace Tests.EndToEnd.Infra;
 
-public static class YamlCliTestHost
-{
+public static class YamlCliTestHost {
     public static async Task<string> RunAsync(
         string[] args,
         string hardwarePath,
         ITestOutputHelper output,
-        string yamlFile)
-    {
+        string yamlFile) {
         var services = new ServiceCollection();
 
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
+        IConfigurationRoot config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> {
                 ["HardwarePath"] = hardwarePath
             })
             .Build();
 
         await CliBootstrap.RegisterInternals(services, config, hardwarePath, yamlFile);
-        services.AddLogging(builder =>
-        {
+        services.AddLogging(builder => {
             builder.ClearProviders();
             builder.AddProvider(new XUnitLoggerProvider(output));
         });
@@ -43,8 +39,20 @@ public static class YamlCliTestHost
 
         CliBootstrap.BuildApp(app);
 
-        await app.RunAsync(args);
+        // Some commands deliberately bypass Spectre and write raw to
+        // System.Console.Out (e.g. `graph topology`, which must emit
+        // unwrapped Mermaid). Capture that too so tests see the full output.
+        TextWriter originalOut = Console.Out;
+        var rawCapture = new StringWriter();
+        Console.SetOut(rawCapture);
 
-        return console.Output;
+        try {
+            await app.RunAsync(args);
+        }
+        finally {
+            Console.SetOut(originalOut);
+        }
+
+        return console.Output + rawCapture.ToString();
     }
 }

@@ -5,10 +5,8 @@ namespace Tests.EndToEnd.UpsTests;
 
 [Collection("Yaml CLI tests")]
 public class UpsWorkflowTests(TempYamlCliFixture fs, ITestOutputHelper outputHelper)
-    : IClassFixture<TempYamlCliFixture>
-{
-    private async Task<(string, string)> ExecuteAsync(params string[] args)
-    {
+    : IClassFixture<TempYamlCliFixture> {
+    private async Task<(string, string)> ExecuteAsync(params string[] args) {
         outputHelper.WriteLine($"rpk {string.Join(" ", args)}");
 
         var output = await YamlCliTestHost.RunAsync(
@@ -24,10 +22,9 @@ public class UpsWorkflowTests(TempYamlCliFixture fs, ITestOutputHelper outputHel
     }
 
     [Fact]
-    public async Task ups_cli_workflow_test()
-    {
+    public async Task ups_cli_workflow_test() {
         // Add UPS
-        var (output, yaml) = await ExecuteAsync("ups", "add", "ups01");
+        (var output, var yaml) = await ExecuteAsync("ups", "add", "ups01");
         Assert.Equal("UPS 'ups01' added.\n", output);
         Assert.Contains("name: ups01", yaml);
 
@@ -40,12 +37,13 @@ public class UpsWorkflowTests(TempYamlCliFixture fs, ITestOutputHelper outputHel
         Assert.Equal("UPS 'ups01' updated.\n", output);
 
         Assert.Equal("""
-                     version: 2
+                     version: 3
                      resources:
                      - kind: Ups
                        model: APC-SmartUPS-1500
                        va: 1500
                        name: ups01
+                     connections: []
 
                      """, yaml);
 
@@ -61,7 +59,7 @@ public class UpsWorkflowTests(TempYamlCliFixture fs, ITestOutputHelper outputHel
         Assert.Equal("UPS 'ups02' updated.\n", output);
 
         Assert.Equal("""
-                     version: 2
+                     version: 3
                      resources:
                      - kind: Ups
                        model: APC-SmartUPS-1500
@@ -71,6 +69,7 @@ public class UpsWorkflowTests(TempYamlCliFixture fs, ITestOutputHelper outputHel
                        model: CyberPower-2200VA
                        va: 2200
                        name: ups02
+                     connections: []
 
                      """, yaml);
 

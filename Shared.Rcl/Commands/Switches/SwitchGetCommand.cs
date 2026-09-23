@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.Switches;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -7,24 +8,21 @@ namespace Shared.Rcl.Commands.Switches;
 
 public class SwitchGetCommand(
     IServiceProvider serviceProvider
-) : AsyncCommand
-{
-    public override async Task<int> ExecuteAsync(
+) : AsyncCommand {
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
-        CancellationToken cancellationToken)
-    {
-        using var scope = serviceProvider.CreateScope();
-        var useCase = scope.ServiceProvider.GetRequiredService<SwitchHardwareReportUseCase>();
+        CancellationToken cancellationToken) {
+        using IServiceScope scope = serviceProvider.CreateScope();
+        SwitchHardwareReportUseCase useCase = scope.ServiceProvider.GetRequiredService<SwitchHardwareReportUseCase>();
 
-        var report = await useCase.ExecuteAsync();
+        SwitchHardwareReport report = await useCase.ExecuteAsync();
 
-        if (report.Switches.Count == 0)
-        {
+        if (report.Switches.Count == 0) {
             AnsiConsole.MarkupLine("[yellow]No switches found.[/]");
             return 0;
         }
 
-        var table = new Table()
+        Table table = new Table()
             .Border(TableBorder.Rounded)
             .AddColumn("Name")
             .AddColumn("Model")
@@ -33,14 +31,14 @@ public class SwitchGetCommand(
             .AddColumn("Ports")
             .AddColumn("Port Summary");
 
-        foreach (var s in report.Switches)
+        foreach (SwitchHardwareRow s in report.Switches)
             table.AddRow(
-                s.Name,
-                s.Model ?? "Unknown",
+                s.Name.EscapeMarkup(),
+                (s.Model ?? "Unknown").EscapeMarkup(),
                 s.Managed ? "[green]yes[/]" : "[red]no[/]",
                 s.Poe ? "[green]yes[/]" : "[red]no[/]",
                 s.TotalPorts.ToString(),
-                s.PortSummary
+                s.PortSummary.EscapeMarkup()
             );
 
         AnsiConsole.Write(table);

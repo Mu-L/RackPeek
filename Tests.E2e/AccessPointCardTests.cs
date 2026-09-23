@@ -8,19 +8,17 @@ namespace Tests.E2e;
 
 public class AccessPointCardTests(
     PlaywrightFixture fixture,
-    ITestOutputHelper output) : E2ETestBase(fixture, output)
-{
+    ITestOutputHelper output) : E2ETestBase(fixture, output) {
+    private readonly PlaywrightFixture _fixture = fixture;
     private readonly ITestOutputHelper _output = output;
 
     [Fact]
-    public async Task User_Can_Edit_Model_And_Speed_And_Save()
-    {
-        var (context, page) = await CreatePageAsync();
+    public async Task User_Can_Edit_Model_And_Speed_And_Save() {
+        (IBrowserContext context, IPage page) = await CreatePageAsync();
         var name = $"e2e-ap-{Guid.NewGuid():N}"[..16];
 
-        try
-        {
-            await page.GotoAsync(fixture.BaseUrl);
+        try {
+            await page.GotoAsync(_fixture.BaseUrl);
 
             var layout = new MainLayoutPom(page);
             await layout.AssertLoadedAsync();
@@ -48,28 +46,25 @@ public class AccessPointCardTests(
             await card.SaveAsync(name);
 
             await page.ReloadAsync();
-            
+
             await Assertions.Expect(card.ModelValue(name)).ToHaveTextAsync(newModel);
             await Assertions.Expect(card.SpeedValue(name))
                 .ToHaveTextAsync($"{newSpeed.ToString(CultureInfo.InvariantCulture)} Gbps");
 
             await context.CloseAsync();
         }
-        finally
-        {
+        finally {
             await context.CloseAsync();
         }
     }
 
     [Fact]
-    public async Task User_Can_Cancel_Edit_And_Changes_Are_Not_Applied()
-    {
-        var (context, page) = await CreatePageAsync();
+    public async Task User_Can_Cancel_Edit_And_Changes_Are_Not_Applied() {
+        (IBrowserContext context, IPage page) = await CreatePageAsync();
         var name = $"e2e-ap-{Guid.NewGuid():N}"[..16];
 
-        try
-        {
-            await page.GotoAsync(fixture.BaseUrl);
+        try {
+            await page.GotoAsync(_fixture.BaseUrl);
 
             var layout = new MainLayoutPom(page);
             await layout.AssertLoadedAsync();
@@ -100,27 +95,24 @@ public class AccessPointCardTests(
             var afterModel = await card.ModelSection(name).TextContentAsync();
             var afterSpeed = await card.SpeedSection(name).TextContentAsync();
 
-            Assert.Equal(beforeModel, afterModel);
-            Assert.Equal(beforeSpeed, afterSpeed);
+            await Assertions.Expect(card.ModelSection(name)).ToHaveTextAsync(beforeModel ?? "");
+            await Assertions.Expect(card.SpeedSection(name)).ToHaveTextAsync(beforeSpeed ?? "");
 
             await context.CloseAsync();
         }
-        finally
-        {
+        finally {
             await context.CloseAsync();
         }
     }
 
     [Fact]
-    public async Task User_Can_Rename_AccessPoint_From_Card()
-    {
-        var (context, page) = await CreatePageAsync();
+    public async Task User_Can_Rename_AccessPoint_From_Card() {
+        (IBrowserContext context, IPage page) = await CreatePageAsync();
         var name = $"e2e-ap-{Guid.NewGuid():N}"[..16];
         var newName = $"e2e-ap-{Guid.NewGuid():N}"[..16];
 
-        try
-        {
-            await page.GotoAsync(fixture.BaseUrl);
+        try {
+            await page.GotoAsync(_fixture.BaseUrl);
 
             var layout = new MainLayoutPom(page);
             await layout.AssertLoadedAsync();
@@ -146,22 +138,19 @@ public class AccessPointCardTests(
 
             await context.CloseAsync();
         }
-        finally
-        {
+        finally {
             await context.CloseAsync();
         }
     }
 
     [Fact]
-    public async Task User_Can_Clone_AccessPoint_From_Card()
-    {
-        var (context, page) = await CreatePageAsync();
+    public async Task User_Can_Clone_AccessPoint_From_Card() {
+        (IBrowserContext context, IPage page) = await CreatePageAsync();
         var name = $"e2e-ap-{Guid.NewGuid():N}"[..16];
         var cloneName = $"e2e-ap-{Guid.NewGuid():N}"[..16];
 
-        try
-        {
-            await page.GotoAsync(fixture.BaseUrl);
+        try {
+            await page.GotoAsync(_fixture.BaseUrl);
 
             var layout = new MainLayoutPom(page);
             await layout.AssertLoadedAsync();
@@ -198,21 +187,18 @@ public class AccessPointCardTests(
 
             await context.CloseAsync();
         }
-        finally
-        {
+        finally {
             await context.CloseAsync();
         }
     }
 
     [Fact]
-    public async Task User_Can_Delete_AccessPoint_From_Card_And_Is_Redirected()
-    {
-        var (context, page) = await CreatePageAsync();
+    public async Task User_Can_Delete_AccessPoint_From_Card_And_Is_Redirected() {
+        (IBrowserContext context, IPage page) = await CreatePageAsync();
         var name = $"e2e-ap-{Guid.NewGuid():N}"[..16];
 
-        try
-        {
-            await page.GotoAsync(fixture.BaseUrl);
+        try {
+            await page.GotoAsync(_fixture.BaseUrl);
 
             var layout = new MainLayoutPom(page);
             await layout.AssertLoadedAsync();
@@ -241,21 +227,18 @@ public class AccessPointCardTests(
 
             await context.CloseAsync();
         }
-        finally
-        {
+        finally {
             await context.CloseAsync();
         }
     }
-    
+
     [Fact]
-    public async Task User_Can_Add_And_Remove_Tags_From_AccessPoint_Card()
-    {
-        var (context, page) = await CreatePageAsync();
+    public async Task User_Can_Add_And_Remove_Tags_From_AccessPoint_Card() {
+        (IBrowserContext context, IPage page) = await CreatePageAsync();
         var name = $"e2e-ap-{Guid.NewGuid():N}"[..16];
 
-        try
-        {
-            await page.GotoAsync(fixture.BaseUrl);
+        try {
+            await page.GotoAsync(_fixture.BaseUrl);
 
             var layout = new MainLayoutPom(page);
             await layout.AssertLoadedAsync();
@@ -274,7 +257,7 @@ public class AccessPointCardTests(
             var card = new AccessPointCardPom(page);
             await card.AssertCardVisibleAsync(name);
 
-            var tags = card.Tags;
+            TagsPom tags = card.Tags;
 
             // -------------------------------------------------
             // Add multiple tags in one modal interaction
@@ -308,8 +291,169 @@ public class AccessPointCardTests(
 
             await context.CloseAsync();
         }
-        finally
-        {
+        finally {
+            await context.CloseAsync();
+        }
+    }
+
+    [Fact]
+    public async Task User_Can_Add_Ports_To_Two_AccessPoints_And_Connect_Them() {
+        (IBrowserContext context, IPage page) = await CreatePageAsync();
+
+        var ap1 = $"e2e-ap-{Guid.NewGuid():N}"[..16];
+        var ap2 = $"e2e-ap-{Guid.NewGuid():N}"[..16];
+
+        try {
+            await page.GotoAsync(_fixture.BaseUrl);
+
+            var layout = new MainLayoutPom(page);
+            await layout.AssertLoadedAsync();
+            await layout.GotoHardwareAsync();
+
+            var hardwareTree = new HardwareTreePom(page);
+            await hardwareTree.AssertLoadedAsync();
+            await hardwareTree.GotoAccessPointsListAsync();
+
+            var list = new AccessPointsListPom(page);
+            await list.AssertLoadedAsync();
+
+            // -------------------------------------------------
+            // Create first AP
+            // -------------------------------------------------
+
+            await list.AddAccessPointAsync(ap1);
+            await page.WaitForURLAsync($"**/resources/hardware/{ap1}");
+
+            var card = new AccessPointCardPom(page);
+            await card.AssertCardVisibleAsync(ap1);
+
+            // Add port group to AP1
+            await card.AddPortGroupAsync(
+                "rj45",
+                "1",
+                2);
+
+            // -------------------------------------------------
+            // Create second AP
+            // -------------------------------------------------
+
+            await layout.GotoHardwareAsync();
+            await hardwareTree.AssertLoadedAsync();
+            await hardwareTree.GotoAccessPointsListAsync();
+            await list.AssertLoadedAsync();
+
+            await list.AddAccessPointAsync(ap2);
+            await page.WaitForURLAsync($"**/resources/hardware/{ap2}");
+
+            await card.AssertCardVisibleAsync(ap2);
+
+            // Add port group to AP2
+            await card.AddPortGroupAsync(
+                "sfp+",
+                "2.5",
+                2);
+            // -------------------------------------------------
+            // Go back to AP1 to create connection
+            // -------------------------------------------------
+
+            await layout.GotoHardwareAsync();
+            await hardwareTree.GotoAccessPointsListAsync();
+            await list.AssertLoadedAsync();
+            await list.OpenAccessPointAsync(ap1);
+
+            await card.AssertCardVisibleAsync(ap1);
+
+            // -------------------------------------------------
+            // Open connection modal from port
+            // -------------------------------------------------
+
+            await card.OpenConnectionFromPortAsync(0, 0);
+
+            // -------------------------------------------------
+            // Create connection
+            // -------------------------------------------------
+
+            await card.CreateConnectionAsync(
+                ap1,
+                "rj45 — 1 Gbps (2)", // example label — adjust if needed
+                "Port 1",
+                ap2,
+                "sfp+ — 2.5 Gbps (2)",
+                "Port 1");
+
+            // -------------------------------------------------
+            // Verify connection indicator appears
+            // -------------------------------------------------
+
+            await card.Ports.AssertPortVisibleAsync("accesspoint-ports", 0, 0);
+
+            await context.CloseAsync();
+        }
+        finally {
+            await context.CloseAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Connection_Modal_Stores_And_Replays_The_Label() {
+        (IBrowserContext context, IPage page) = await CreatePageAsync();
+
+        var ap1 = $"e2e-ap-{Guid.NewGuid():N}"[..16];
+        var ap2 = $"e2e-ap-{Guid.NewGuid():N}"[..16];
+        var label = $"link-{Guid.NewGuid():N}"[..12];
+
+        try {
+            await page.GotoAsync(_fixture.BaseUrl);
+
+            var layout = new MainLayoutPom(page);
+            await layout.AssertLoadedAsync();
+            await layout.GotoHardwareAsync();
+
+            var hardwareTree = new HardwareTreePom(page);
+            await hardwareTree.AssertLoadedAsync();
+            await hardwareTree.GotoAccessPointsListAsync();
+
+            var list = new AccessPointsListPom(page);
+            await list.AssertLoadedAsync();
+
+            // Two APs each with a port group
+            await list.AddAccessPointAsync(ap1);
+            await page.WaitForURLAsync($"**/resources/hardware/{ap1}");
+            var card = new AccessPointCardPom(page);
+            await card.AssertCardVisibleAsync(ap1);
+            await card.AddPortGroupAsync("rj45", "1", 2);
+
+            await layout.GotoHardwareAsync();
+            await hardwareTree.GotoAccessPointsListAsync();
+            await list.AssertLoadedAsync();
+            await list.AddAccessPointAsync(ap2);
+            await page.WaitForURLAsync($"**/resources/hardware/{ap2}");
+            await card.AssertCardVisibleAsync(ap2);
+            await card.AddPortGroupAsync("sfp+", "2.5", 2);
+
+            // Open AP1 and create a connection with a label
+            await layout.GotoHardwareAsync();
+            await hardwareTree.GotoAccessPointsListAsync();
+            await list.AssertLoadedAsync();
+            await list.OpenAccessPointAsync(ap1);
+            await card.AssertCardVisibleAsync(ap1);
+
+            await card.OpenConnectionFromPortAsync(0, 0);
+            await card.CreateConnectionAsync(
+                ap1, "rj45 — 1 Gbps (2)", "Port 1",
+                ap2, "sfp+ — 2.5 Gbps (2)", "Port 1",
+                label: label);
+
+            // Re-open the modal on the same port — the stored label should
+            // pre-populate the input, proving it round-tripped to the YAML
+            // and back through `GetConnectionForPortAsync`.
+            await card.OpenConnectionFromPortAsync(0, 0);
+
+            await Assertions.Expect(card.ConnectionLabelInput()).ToHaveValueAsync(label);
+
+            await context.CloseAsync();
+        }
+        finally {
             await context.CloseAsync();
         }
     }

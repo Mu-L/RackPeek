@@ -1,11 +1,7 @@
-@using RackPeek.Domain.Resources.SubResources
 @using RackPeek.Domain.Resources.Switches
-@using RackPeek.Domain.UseCases.Ports
+@using Shared.Rcl.Hardware
 @inject UpdateSwitchUseCase UpdateUseCase
 @inject IGetResourceByNameUseCase<Switch> GetByNameUseCase
-@inject IAddPortUseCase<Switch> AddPortUseCase
-@inject IUpdatePortUseCase<Switch> UpdatePortUseCase
-@inject IRemovePortUseCase<Switch> RemovePortUseCase
 @inject IDeleteResourceUseCase<Switch> DeleteUseCase
 @inject ICloneResourceUseCase<Switch> CloneUseCase
 @inject IRenameResourceUseCase<Switch> RenameUseCase
@@ -78,7 +74,7 @@
             {
                 <input data-testid="switch-model-input"
                        class="w-full px-3 py-2 rounded-md bg-zinc-800 text-zinc-100 border border-zinc-600"
-                       @bind="_edit.Model" />
+                       @bind="_edit.Model"/>
             }
             else if (!string.IsNullOrWhiteSpace(Switch.Model))
             {
@@ -99,14 +95,14 @@
                     <label class="flex items-center gap-2 text-zinc-300">
                         <input type="checkbox"
                                data-testid="switch-managed-checkbox"
-                               @bind="_edit.Managed" />
+                               @bind="_edit.Managed"/>
                         Managed
                     </label>
 
                     <label class="flex items-center gap-2 text-zinc-300">
                         <input type="checkbox"
                                data-testid="switch-poe-checkbox"
-                               @bind="_edit.Poe" />
+                               @bind="_edit.Poe"/>
                         PoE
                     </label>
                 </div>
@@ -133,40 +129,16 @@
         </div>
 
         <!-- Ports -->
-        <div class="md:col-span-2"
-             data-testid="switch-ports-section">
+        <PortGroupEditor T="Switch"
+                         Resource="Switch"
+                         OnResourceChanged="r => Switch = r"
+                         TestIdPrefix="switch-ports"/>
 
-            <div class="flex items-center justify-between mb-1 group">
-                <div class="text-zinc-400">
-                    Ports
-                    <button data-testid="add-port-button"
-                            class="hover:text-emerald-400 ml-1"
-                            @onclick="OpenAddPort">
-                        +
-                    </button>
-                </div>
-            </div>
-
-            @if (Switch.Ports?.Any() == true)
-            {
-                @foreach (var port in Switch.Ports)
-                {
-                    <div class="flex items-center justify-between text-zinc-300 group hover:bg-zinc-800/40 rounded px-1 py-0.5">
-                        <button data-testid=@($"edit-port-{port.Type}-{port.Speed}")
-                                class="hover:text-emerald-400"
-                                @onclick="() => OpenEditPort(port)">
-                            @port.Count× @port.Type — @port.Speed Gbps
-                        </button>
-                    </div>
-                }
-            }
-        </div>
-
-        <ResourceTagEditor Resource="Switch" 
-                           TestIdPrefix="switch" />
+        <ResourceTagEditor Resource="Switch"
+                           TestIdPrefix="switch"/>
 
         <ResourceLabelEditor Resource="Switch"
-                             TestIdPrefix="switch" />
+                             TestIdPrefix="switch"/>
 
 
         <div class="md:col-span-2"
@@ -178,24 +150,18 @@
             {
                 <MarkdownEditor @bind-Value="_edit.Notes"
                                 ShowActionButtons="false"
-                                TestIdPrefix="switch-notes-editor" />
+                                TestIdPrefix="switch-notes-editor"/>
             }
             else
             {
                 <MarkdownViewer Value="@Switch.Notes"
                                 ShowEditButton="false"
-                                TestIdPrefix="switch-notes-viewer" />
+                                TestIdPrefix="switch-notes-viewer"/>
             }
         </div>
 
     </div>
 </div>
-
-<PortModal IsOpen="@_portModalOpen"
-           IsOpenChanged="v => _portModalOpen = v"
-           Value="@_editingPort"
-           OnSubmit="HandlePortSubmit"
-           OnDelete="HandlePortDelete" />
 
 <ConfirmModal IsOpen="_confirmDeleteOpen"
               IsOpenChanged="v => _confirmDeleteOpen = v"
@@ -214,7 +180,7 @@
                   Label="New switch name"
                   Value="@Switch.Name"
                   OnSubmit="HandleRenameSubmit"
-                  TestIdPrefix="switch-rename" />
+                  TestIdPrefix="switch-rename"/>
 
 <StringValueModal IsOpen="_cloneOpen"
                   IsOpenChanged="v => _cloneOpen = v"
@@ -223,7 +189,7 @@
                   Label="New resource name"
                   Value="@($"{Switch.Name}-copy")"
                   OnSubmit="HandleCloneSubmit"
-                  TestIdPrefix="switch-clone" />
+                  TestIdPrefix="switch-clone"/>
 
 
 @code {
@@ -257,63 +223,6 @@
         _isEditing = false;
     }
 
-    #region Ports
-
-    bool _portModalOpen;
-    int _editingPortIndex;
-    Port? _editingPort;
-
-    void OpenAddPort()
-    {
-        _editingPortIndex = -1;
-        _editingPort = null;
-        _portModalOpen = true;
-    }
-
-    void OpenEditPort(Port port)
-    {
-        Switch.Ports ??= new List<Port>();
-        _editingPortIndex = Switch.Ports.IndexOf(port);
-        _editingPort = port;
-        _portModalOpen = true;
-    }
-
-    async Task HandlePortSubmit(Port port)
-    {
-        if (_editingPortIndex < 0)
-        {
-            await AddPortUseCase.ExecuteAsync(
-                Switch.Name,
-                port.Type,
-                port.Speed,
-                port.Count);
-        }
-        else
-        {
-            await UpdatePortUseCase.ExecuteAsync(
-                Switch.Name,
-                _editingPortIndex,
-                port.Type,
-                port.Speed,
-                port.Count);
-        }
-
-        Switch = await GetByNameUseCase.ExecuteAsync(Switch.Name);
-        StateHasChanged();
-    }
-
-    async Task HandlePortDelete(Port _)
-    {
-        await RemovePortUseCase.ExecuteAsync(
-            Switch.Name,
-            _editingPortIndex);
-
-        Switch = await GetByNameUseCase.ExecuteAsync(Switch.Name);
-        StateHasChanged();
-    }
-
-    #endregion
-
     public class SwitchEditModel
     {
         public string? Model { get; set; }
@@ -332,7 +241,6 @@
             };
         }
     }
-
 
 }
 

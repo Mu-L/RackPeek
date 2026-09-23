@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RackPeek.Domain.Resources.AccessPoints;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -9,31 +10,31 @@ namespace Shared.Rcl.Commands.AccessPoints;
 public class AccessPointReportCommand(
     ILogger<AccessPointReportCommand> logger,
     IServiceProvider serviceProvider
-) : AsyncCommand
-{
-    public override async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken)
-    {
-        using var scope = serviceProvider.CreateScope();
-        var useCase = scope.ServiceProvider.GetRequiredService<AccessPointHardwareReportUseCase>();
+) : AsyncCommand {
+    private readonly ILogger<AccessPointReportCommand> _logger = logger;
 
-        var report = await useCase.ExecuteAsync();
+    protected override async Task<int> ExecuteAsync(CommandContext context, CancellationToken cancellationToken) {
+        using IServiceScope scope = serviceProvider.CreateScope();
+        AccessPointHardwareReportUseCase useCase =
+            scope.ServiceProvider.GetRequiredService<AccessPointHardwareReportUseCase>();
 
-        if (report.AccessPoints.Count == 0)
-        {
+        AccessPointHardwareReport report = await useCase.ExecuteAsync();
+
+        if (report.AccessPoints.Count == 0) {
             AnsiConsole.MarkupLine("[yellow]No access points found.[/]");
             return 0;
         }
 
-        var table = new Table()
+        Table table = new Table()
             .Border(TableBorder.Rounded)
             .AddColumn("Name")
             .AddColumn("Model")
             .AddColumn("Speed (Gbps)");
 
-        foreach (var ap in report.AccessPoints)
+        foreach (AccessPointHardwareRow ap in report.AccessPoints)
             table.AddRow(
-                ap.Name,
-                ap.Model,
+                ap.Name.EscapeMarkup(),
+                ap.Model.EscapeMarkup(),
                 $"{ap.SpeedGb}"
             );
 

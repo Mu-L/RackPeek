@@ -5,10 +5,8 @@ namespace Tests.EndToEnd.RouterTests;
 
 [Collection("Yaml CLI tests")]
 public class RouterCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputHelper)
-    : IClassFixture<TempYamlCliFixture>
-{
-    private async Task<(string, string)> ExecuteAsync(params string[] args)
-    {
+    : IClassFixture<TempYamlCliFixture> {
+    private async Task<(string, string)> ExecuteAsync(params string[] args) {
         var output = await YamlCliTestHost.RunAsync(
             args,
             fs.Root,
@@ -21,12 +19,11 @@ public class RouterCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputH
     }
 
     [Fact]
-    public async Task describe_outputs_expected_information()
-    {
+    public async Task describe_outputs_expected_information() {
         await ExecuteAsync("routers", "add", "rt01");
         await ExecuteAsync("routers", "set", "rt01", "--Model", "Ubiquiti EdgeRouter 4");
 
-        var (output, _) = await ExecuteAsync("routers", "describe", "rt01");
+        (var output, var _) = await ExecuteAsync("routers", "describe", "rt01");
 
         Assert.Contains("rt01", output);
         Assert.Contains("Ubiquiti EdgeRouter 4", output);
@@ -35,8 +32,7 @@ public class RouterCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputH
     }
 
     [Fact]
-    public async Task help_commands_do_not_throw()
-    {
+    public async Task help_commands_do_not_throw() {
         Assert.Contains("Manage network routers", (await ExecuteAsync("routers", "--help")).Item1);
         Assert.Contains("Add a new network router", (await ExecuteAsync("routers", "add", "--help")).Item1);
         Assert.Contains("List all routers", (await ExecuteAsync("routers", "list", "--help")).Item1);
@@ -50,5 +46,16 @@ public class RouterCommandTests(TempYamlCliFixture fs, ITestOutputHelper outputH
         Assert.Contains("Add a port", (await ExecuteAsync("routers", "port", "add", "--help")).Item1);
         Assert.Contains("Update a router port", (await ExecuteAsync("routers", "port", "set", "--help")).Item1);
         Assert.Contains("Remove a port", (await ExecuteAsync("routers", "port", "del", "--help")).Item1);
+        Assert.Contains("Rename a router", (await ExecuteAsync("routers", "rename", "--help")).Item1);
+    }
+
+    [Fact]
+    public async Task rename_successfully_updates_name() {
+        await ExecuteAsync("routers", "add", "rt01");
+
+        (var output, var yaml) = await ExecuteAsync("routers", "rename", "rt01", "rt01-new");
+
+        Assert.Equal("Router 'rt01' renamed to 'rt01-new'.\n", output);
+        Assert.Contains("name: rt01-new", yaml);
     }
 }

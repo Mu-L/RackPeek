@@ -1,30 +1,29 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.Desktops;
 using RackPeek.Domain.UseCases;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace Shared.Rcl.Commands.Desktops;
 
 public class DesktopGetCommand(IServiceProvider provider)
-    : AsyncCommand
-{
-    public override async Task<int> ExecuteAsync(
+    : AsyncCommand {
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
-        CancellationToken cancellationToken)
-    {
-        using var scope = provider.CreateScope();
-        var useCase = scope.ServiceProvider.GetRequiredService<IGetAllResourcesByKindUseCase<Desktop>>();
+        CancellationToken cancellationToken) {
+        using IServiceScope scope = provider.CreateScope();
+        IGetAllResourcesByKindUseCase<Desktop> useCase =
+            scope.ServiceProvider.GetRequiredService<IGetAllResourcesByKindUseCase<Desktop>>();
 
-        var desktops = await useCase.ExecuteAsync();
+        IReadOnlyList<Desktop> desktops = await useCase.ExecuteAsync();
 
-        if (desktops.Count == 0)
-        {
+        if (desktops.Count == 0) {
             AnsiConsole.MarkupLine("[yellow]No desktops found.[/]");
             return 0;
         }
 
-        var table = new Table()
+        Table table = new Table()
             .Border(TableBorder.Rounded)
             .AddColumn("Name")
             .AddColumn("Model")
@@ -34,14 +33,14 @@ public class DesktopGetCommand(IServiceProvider provider)
             .AddColumn("NICs")
             .AddColumn("GPUs");
 
-        foreach (var d in desktops)
+        foreach (Desktop d in desktops)
             table.AddRow(
-                d.Name,
-                d.Model ?? "Unknown",
+                d.Name.EscapeMarkup(),
+                (d.Model ?? "Unknown").EscapeMarkup(),
                 (d.Cpus?.Count ?? 0).ToString(),
                 d.Ram == null ? "None" : $"{d.Ram.Size}GB",
                 (d.Drives?.Count ?? 0).ToString(),
-                (d.Nics?.Count ?? 0).ToString(),
+                (d.Ports?.Count ?? 0).ToString(),
                 (d.Gpus?.Count ?? 0).ToString()
             );
 

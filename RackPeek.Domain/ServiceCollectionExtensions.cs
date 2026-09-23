@@ -1,7 +1,10 @@
 using System.Reflection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using RackPeek.Domain.Git;
 using RackPeek.Domain.Persistence;
 using RackPeek.Domain.Resources;
+using RackPeek.Domain.Resources.Connections;
 using RackPeek.Domain.Resources.Hardware;
 using RackPeek.Domain.Resources.Services;
 using RackPeek.Domain.Resources.SystemResources;
@@ -9,36 +12,58 @@ using RackPeek.Domain.UseCases;
 using RackPeek.Domain.UseCases.Cpus;
 using RackPeek.Domain.UseCases.Drives;
 using RackPeek.Domain.UseCases.Gpus;
-using RackPeek.Domain.UseCases.Nics;
 using RackPeek.Domain.UseCases.Labels;
 using RackPeek.Domain.UseCases.Ports;
 using RackPeek.Domain.UseCases.Tags;
 
 namespace RackPeek.Domain;
 
-public interface IResourceUseCase<T> where T : Resource
-{
+public interface IResourceUseCase<T> where T : Resource {
 }
 
-public static class ServiceCollectionExtensions
-{
+public static class ServiceCollectionExtensions {
+
+    public static IServiceCollection AddGitServices(
+        this IServiceCollection services,
+        IConfiguration config,
+        string? yamlPath = null) {
+        var gitToken = config["GIT_TOKEN"];
+        if (!string.IsNullOrWhiteSpace(gitToken) && !string.IsNullOrWhiteSpace(yamlPath)) {
+            var gitUsername = config["GIT_USERNAME"] ?? "git";
+            var insecureTls = string.Equals(
+                config["GIT_INSECURE_TLS"], "true", StringComparison.OrdinalIgnoreCase);
+
+            services.AddSingleton<IGitCredentialsProvider>(
+                _ => new TokenCredentialsProvider(gitUsername, gitToken));
+
+            services.AddSingleton<IGitRepository>(sp => {
+                IGitCredentialsProvider creds = sp.GetRequiredService<IGitCredentialsProvider>();
+                return new LibGit2GitRepository(yamlPath, creds, insecureTls);
+            });
+            RpkConstants.HasGitServices = true;
+        }
+        else {
+            RpkConstants.HasGitServices = false;
+            services.AddSingleton<IGitRepository, NullGitRepository>();
+        }
+
+        return services;
+    }
     public static IServiceCollection AddResourceUseCases(
         this IServiceCollection services,
-        Assembly assembly)
-    {
-        var types = assembly.GetTypes()
+        Assembly assembly) {
+        IEnumerable<Type> types = assembly.GetTypes()
             .Where(t => !t.IsAbstract && !t.IsInterface);
 
-        foreach (var type in types)
-        {
-            var resourceUseCaseInterfaces = type.GetInterfaces()
+        foreach (Type type in types) {
+            IEnumerable<Type> resourceUseCaseInterfaces = type.GetInterfaces()
                 .Where(i =>
                     i.IsGenericType &&
                     i.GetInterfaces().Any(parent =>
                         parent.IsGenericType &&
                         parent.GetGenericTypeDefinition() == typeof(IResourceUseCase<>)));
 
-            foreach (var serviceType in resourceUseCaseInterfaces) services.AddScoped(serviceType, type);
+            foreach (Type serviceType in resourceUseCaseInterfaces) services.AddScoped(serviceType, type);
         }
 
         return services;
@@ -46,8 +71,7 @@ public static class ServiceCollectionExtensions
 
 
     public static IServiceCollection AddUseCases(
-        this IServiceCollection services)
-    {
+        this IServiceCollection services) {
         services.AddScoped(typeof(IAddResourceUseCase<>), typeof(AddResourceUseCase<>));
         services.AddScoped(typeof(IAddLabelUseCase<>), typeof(AddLabelUseCase<>));
         services.AddScoped(typeof(IAddTagUseCase<>), typeof(AddTagUseCase<>));
@@ -76,25 +100,28 @@ public static class ServiceCollectionExtensions
         services.AddScoped(typeof(IRemovePortUseCase<>), typeof(RemovePortUseCase<>));
         services.AddScoped(typeof(IUpdatePortUseCase<>), typeof(UpdatePortUseCase<>));
 
-        services.AddScoped(typeof(IAddNicUseCase<>), typeof(AddNicUseCase<>));
-        services.AddScoped(typeof(IRemoveNicUseCase<>), typeof(RemoveNicUseCase<>));
-        services.AddScoped(typeof(IUpdateNicUseCase<>), typeof(UpdateNicUseCase<>));
+        services.AddScoped(typeof(IAddConnectionUseCase), typeof(AddConnectionUseCase));
+        services.AddScoped(typeof(IGetConnectionForPortUseCase), typeof(GetConnectionForPortUseCase));
+        services.AddScoped(typeof(IGetConnectionsForResourceUseCase), typeof(GetConnectionsForResourceUseCase));
+        services.AddScoped(typeof(IRemoveConnectionUseCase), typeof(RemoveConnectionUseCase));
 
-        var usecases = Assembly.GetAssembly(typeof(IUseCase))
+
+        IEnumerable<Type>? usecases = Assembly.GetAssembly(typeof(IUseCase))
             ?.GetTypes()
             .Where(t =>
                 !t.IsAbstract &&
                 typeof(IUseCase).IsAssignableFrom(t)
             );
 
-        foreach (var type in usecases) services.AddScoped(type);
+        if (usecases != null)
+            foreach (Type type in usecases)
+                services.AddScoped(type);
 
         return services;
     }
 
     public static IServiceCollection AddYamlRepos(
-        this IServiceCollection services)
-    {
+        this IServiceCollection services) {
         services.AddScoped<IHardwareRepository, YamlHardwareRepository>();
         services.AddScoped<ISystemRepository, YamlSystemRepository>();
         services.AddScoped<IServiceRepository, ServiceRepository>();

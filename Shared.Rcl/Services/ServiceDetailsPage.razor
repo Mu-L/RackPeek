@@ -20,11 +20,10 @@
     }
     else
     {
-        <h1 class="text-lg text-zinc-100 mb-6">
-            @_service.Name (@_service.Kind)
-        </h1>
-
-        <ServiceCardComponent Service="_service" OnDeleted="OnDeleted"/>
+        @if (_service != null)
+        {
+            <ServiceCardComponent Service="_service" OnDeleted="OnDeleted"/>
+        }
     }
 </div>
 
@@ -33,14 +32,14 @@
 
     private Service? _service;
     private bool _loading = true;
-    
+
     protected override async Task OnParametersSetAsync()
     {
         _loading = true;
         _service = await Repo.GetByNameAsync<Service>(ServiceName);
         _loading = false;
     }
-    
+
 
     private void OnDeleted(string obj)
     {

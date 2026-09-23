@@ -1,14 +1,13 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.Servers;
-using RackPeek.Domain.UseCases.Nics;
+using RackPeek.Domain.UseCases.Ports;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace Shared.Rcl.Commands.Servers.Nics;
 
-public class ServerNicAddSettings : ServerNameSettings
-{
-    [CommandOption("--type <TYPE>")] public string Type { get; set; }
+public class ServerNicAddSettings : ServerNameSettings {
+    [CommandOption("--type <TYPE>")] public string? Type { get; set; }
 
     [CommandOption("--speed <SPEED>")] public double Speed { get; set; }
 
@@ -16,15 +15,13 @@ public class ServerNicAddSettings : ServerNameSettings
 }
 
 public class ServerNicAddCommand(IServiceProvider serviceProvider)
-    : AsyncCommand<ServerNicAddSettings>
-{
-    public override async Task<int> ExecuteAsync(
+    : AsyncCommand<ServerNicAddSettings> {
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         ServerNicAddSettings settings,
-        CancellationToken cancellationToken)
-    {
-        using var scope = serviceProvider.CreateScope();
-        var useCase = scope.ServiceProvider.GetRequiredService<IAddNicUseCase<Server>>();
+        CancellationToken cancellationToken) {
+        using IServiceScope scope = serviceProvider.CreateScope();
+        IAddPortUseCase<Server> useCase = scope.ServiceProvider.GetRequiredService<IAddPortUseCase<Server>>();
 
         await useCase.ExecuteAsync(
             settings.Name,

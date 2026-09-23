@@ -1,30 +1,29 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.Laptops;
 using RackPeek.Domain.UseCases;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace Shared.Rcl.Commands.Laptops;
 
 public class LaptopGetCommand(IServiceProvider provider)
-    : AsyncCommand
-{
-    public override async Task<int> ExecuteAsync(
+    : AsyncCommand {
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
-        CancellationToken cancellationToken)
-    {
-        using var scope = provider.CreateScope();
-        var useCase = scope.ServiceProvider.GetRequiredService<IGetAllResourcesByKindUseCase<Laptop>>();
+        CancellationToken cancellationToken) {
+        using IServiceScope scope = provider.CreateScope();
+        IGetAllResourcesByKindUseCase<Laptop> useCase =
+            scope.ServiceProvider.GetRequiredService<IGetAllResourcesByKindUseCase<Laptop>>();
 
-        var laptops = await useCase.ExecuteAsync();
+        IReadOnlyList<Laptop> laptops = await useCase.ExecuteAsync();
 
-        if (laptops.Count == 0)
-        {
+        if (laptops.Count == 0) {
             AnsiConsole.MarkupLine("[yellow]No Laptops found.[/]");
             return 0;
         }
 
-        var table = new Table()
+        Table table = new Table()
             .Border(TableBorder.Rounded)
             .AddColumn("Name")
             .AddColumn("CPUs")
@@ -32,9 +31,9 @@ public class LaptopGetCommand(IServiceProvider provider)
             .AddColumn("Drives")
             .AddColumn("GPUs");
 
-        foreach (var d in laptops)
+        foreach (Laptop d in laptops)
             table.AddRow(
-                d.Name,
+                d.Name.EscapeMarkup(),
                 (d.Cpus?.Count ?? 0).ToString(),
                 d.Ram == null ? "None" : $"{d.Ram.Size}GB",
                 (d.Drives?.Count ?? 0).ToString(),

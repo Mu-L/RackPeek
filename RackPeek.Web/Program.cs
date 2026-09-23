@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Hosting.StaticWebAssets;
 using RackPeek.Domain;
+using RackPeek.Domain.Git;
 using RackPeek.Domain.Persistence;
 using RackPeek.Domain.Persistence.Yaml;
 using RackPeek.Web.Api;
@@ -10,16 +11,12 @@ using Shared.Rcl;
 
 namespace RackPeek.Web;
 
-public class Program
-{
-    public static async Task<WebApplication> BuildApp(WebApplicationBuilder builder)
-    {
+public class Program {
+    public static async Task<WebApplication> BuildApp(WebApplicationBuilder builder) {
         StaticWebAssetsLoader.UseStaticWebAssets(
             builder.Environment,
             builder.Configuration
         );
-
-        builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: false);
 
         var yamlDir = builder.Configuration.GetValue<string>("RPK_YAML_DIR") ?? "./config";
         var yamlFileName = "config.yaml";
@@ -33,8 +30,7 @@ public class Program
 
         var yamlFilePath = Path.Combine(yamlPath, yamlFileName);
 
-        if (!File.Exists(yamlFilePath))
-        {
+        if (!File.Exists(yamlFilePath)) {
             await using var fs = new FileStream(
                 yamlFilePath,
                 FileMode.CreateNew,
@@ -44,25 +40,24 @@ public class Program
             await using var writer = new StreamWriter(fs);
             await writer.WriteLineAsync("# default config");
         }
-        builder.Services.ConfigureHttpJsonOptions(options =>
-        {
+
+        builder.Services.ConfigureHttpJsonOptions(options => {
             options.SerializerOptions.Converters.Add(
                 new JsonStringEnumConverter());
         });
         builder.Services.AddScoped<ITextFileStore, PhysicalTextFileStore>();
 
-        builder.Services.AddScoped(sp =>
-        {
-            var nav = sp.GetRequiredService<NavigationManager>();
-            return new HttpClient
-            {
+        builder.Services.AddScoped(sp => {
+            NavigationManager nav = sp.GetRequiredService<NavigationManager>();
+            return new HttpClient {
                 BaseAddress = new Uri(nav.BaseUri)
             };
         });
 
+        builder.Services.AddGitServices(builder.Configuration, yamlPath);
+
         var resources = new ResourceCollection();
         builder.Services.AddSingleton(resources);
-
         builder.Services.AddScoped<RackPeekConfigMigrationDeserializer>();
         builder.Services.AddScoped<IResourceYamlMigrationService, ResourceYamlMigrationService>();
 
@@ -83,18 +78,17 @@ public class Program
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
 
-        var app = builder.Build();
+        WebApplication app = builder.Build();
 
-        if (!app.Environment.IsDevelopment())
-        {
+        if (!app.Environment.IsDevelopment()) {
             app.UseExceptionHandler("/Error");
             app.UseHsts();
         }
 
-        app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-
         app.UseHttpsRedirection();
         app.UseStaticFiles();
+        app.UseRouting();
+        app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
         app.UseAntiforgery();
 
         app.MapInventoryApi();
@@ -107,10 +101,9 @@ public class Program
         return app;
     }
 
-    public static async Task Main(string[] args)
-    {
-        var builder = WebApplication.CreateBuilder(args);
-        var app = await BuildApp(builder);
+    public static async Task Main(string[] args) {
+        WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+        WebApplication app = await BuildApp(builder);
         await app.RunAsync();
     }
 }

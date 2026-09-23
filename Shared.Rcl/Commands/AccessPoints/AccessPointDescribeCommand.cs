@@ -8,28 +8,27 @@ namespace Shared.Rcl.Commands.AccessPoints;
 
 public class AccessPointDescribeCommand(
     IServiceProvider serviceProvider
-) : AsyncCommand<AccessPointNameSettings>
-{
-    public override async Task<int> ExecuteAsync(
+) : AsyncCommand<AccessPointNameSettings> {
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         AccessPointNameSettings settings,
-        CancellationToken cancellationToken)
-    {
-        using var scope = serviceProvider.CreateScope();
-        var useCase = scope.ServiceProvider.GetRequiredService<IGetResourceByNameUseCase<AccessPoint>>();
+        CancellationToken cancellationToken) {
+        using IServiceScope scope = serviceProvider.CreateScope();
+        IGetResourceByNameUseCase<AccessPoint> useCase =
+            scope.ServiceProvider.GetRequiredService<IGetResourceByNameUseCase<AccessPoint>>();
 
-        var ap = await useCase.ExecuteAsync(settings.Name);
+        AccessPoint ap = await useCase.ExecuteAsync(settings.Name);
 
-        var grid = new Grid()
+        Grid grid = new Grid()
             .AddColumn(new GridColumn().NoWrap())
             .AddColumn(new GridColumn().NoWrap());
 
-        grid.AddRow("Name:", ap.Name);
-        grid.AddRow("Model:", ap.Model ?? "Unknown");
-        grid.AddRow("Speed (Gbps):", ap.Speed?.ToString() ?? "Unknown");
+        grid.AddRow("Name:", ap.Name.EscapeMarkup());
+        grid.AddRow("Model:", (ap.Model ?? "Unknown").EscapeMarkup());
+        grid.AddRow("Speed (Gbps):", (ap.Speed?.ToString() ?? "Unknown").EscapeMarkup());
 
         if (ap.Labels.Count > 0)
-            grid.AddRow("Labels:", string.Join(", ", ap.Labels.Select(kvp => $"{kvp.Key}: {kvp.Value}")));
+            grid.AddRow("Labels:", string.Join(", ", ap.Labels.Select(kvp => $"{kvp.Key.EscapeMarkup()}: {kvp.Value.EscapeMarkup()}")));
 
         AnsiConsole.Write(
             new Panel(grid)

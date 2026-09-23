@@ -1,4 +1,5 @@
 @using RackPeek.Domain.Resources.AccessPoints
+@using Shared.Rcl.Hardware
 @inject UpdateAccessPointUseCase UpdateUseCase
 @inject IDeleteResourceUseCase<AccessPoint> DeleteUseCase
 @inject IRenameResourceUseCase<AccessPoint> RenameUseCase
@@ -72,7 +73,7 @@
             {
                 <input data-testid="accesspoint-model-input"
                        class="w-full px-3 py-2 rounded-md bg-zinc-800 text-zinc-100 border border-zinc-600"
-                       @bind="_edit.Model" />
+                       @bind="_edit.Model"/>
             }
             else if (!string.IsNullOrWhiteSpace(AccessPoint.Model))
             {
@@ -92,8 +93,15 @@
                 <input type="number"
                        step="0.1"
                        data-testid="accesspoint-speed-input"
-                       class="w-full px-3 py-2 rounded-md bg-zinc-800 text-zinc-100 border border-zinc-600"
-                       @bind="_edit.Speed" />
+                        class="w-full px-3 py-2 rounded-md
+                            bg-zinc-800 text-zinc-100
+                            border border-zinc-600
+                            placeholder-zinc-500
+                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                            hover:border-zinc-400
+                            transition-colors duration-150
+                            cursor-text"
+                                                  @bind="_edit.Speed"/>
             }
             else if (AccessPoint.Speed is not null)
             {
@@ -104,11 +112,17 @@
             }
         </div>
 
+        <!-- NICs -->
+        <PortGroupEditor T="AccessPoint"
+                         Resource="AccessPoint"
+                         OnResourceChanged="r => AccessPoint = r"
+                         TestIdPrefix="accesspoint-ports"/>
+
         <ResourceTagEditor Resource="AccessPoint"
-                           TestIdPrefix="accesspoint" />
+                           TestIdPrefix="accesspoint"/>
 
         <ResourceLabelEditor Resource="AccessPoint"
-                             TestIdPrefix="accesspoint" />
+                             TestIdPrefix="accesspoint"/>
 
         <div class="md:col-span-2"
              data-testid="accesspoint-notes-section">
@@ -120,14 +134,14 @@
                 <MarkdownEditor
                     @bind-Value="_edit.Notes"
                     ShowActionButtons="false"
-                    TestIdPrefix="accesspoint-notes-editor" />
+                    TestIdPrefix="accesspoint-notes-editor"/>
             }
             else
             {
                 <MarkdownViewer
                     Value="@AccessPoint.Notes"
                     ShowEditButton="false"
-                    TestIdPrefix="accesspoint-notes-viewer" />
+                    TestIdPrefix="accesspoint-notes-viewer"/>
             }
         </div>
     </div>

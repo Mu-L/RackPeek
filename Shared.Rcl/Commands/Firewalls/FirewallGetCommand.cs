@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.Firewalls;
+using Shared.Rcl.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -7,24 +8,22 @@ namespace Shared.Rcl.Commands.Firewalls;
 
 public class FirewallGetCommand(
     IServiceProvider serviceProvider
-) : AsyncCommand
-{
-    public override async Task<int> ExecuteAsync(
+) : AsyncCommand {
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
-        CancellationToken cancellationToken)
-    {
-        using var scope = serviceProvider.CreateScope();
-        var useCase = scope.ServiceProvider.GetRequiredService<FirewallHardwareReportUseCase>();
+        CancellationToken cancellationToken) {
+        using IServiceScope scope = serviceProvider.CreateScope();
+        FirewallHardwareReportUseCase useCase =
+            scope.ServiceProvider.GetRequiredService<FirewallHardwareReportUseCase>();
 
-        var report = await useCase.ExecuteAsync();
+        FirewallHardwareReport report = await useCase.ExecuteAsync();
 
-        if (report.Firewalls.Count == 0)
-        {
+        if (report.Firewalls.Count == 0) {
             AnsiConsole.MarkupLine("[yellow]No Firewalls found.[/]");
             return 0;
         }
 
-        var table = new Table()
+        Table table = new Table()
             .Border(TableBorder.Rounded)
             .AddColumn("Name")
             .AddColumn("Model")
@@ -33,14 +32,14 @@ public class FirewallGetCommand(
             .AddColumn("Ports")
             .AddColumn("Port Summary");
 
-        foreach (var s in report.Firewalls)
+        foreach (FirewallHardwareRow s in report.Firewalls)
             table.AddRow(
-                s.Name,
-                s.Model ?? "Unknown",
+                s.Name.EscapeMarkup(),
+                (s.Model ?? "Unknown").EscapeMarkup(),
                 s.Managed ? "[green]yes[/]" : "[red]no[/]",
                 s.Poe ? "[green]yes[/]" : "[red]no[/]",
                 s.TotalPorts.ToString(),
-                s.PortSummary
+                s.PortSummary.EscapeMarkup()
             );
 
         AnsiConsole.Write(table);

@@ -1,14 +1,13 @@
 using System.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.Desktops;
-using RackPeek.Domain.UseCases.Nics;
+using RackPeek.Domain.UseCases.Ports;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace Shared.Rcl.Commands.Desktops.Nics;
 
-public class DesktopNicRemoveSettings : CommandSettings
-{
+public class DesktopNicRemoveSettings : CommandSettings {
     [CommandArgument(0, "<desktop>")]
     [Description("The desktop name.")]
     public string DesktopName { get; set; } = default!;
@@ -19,15 +18,13 @@ public class DesktopNicRemoveSettings : CommandSettings
 }
 
 public class DesktopNicRemoveCommand(IServiceProvider provider)
-    : AsyncCommand<DesktopNicRemoveSettings>
-{
-    public override async Task<int> ExecuteAsync(
+    : AsyncCommand<DesktopNicRemoveSettings> {
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         DesktopNicRemoveSettings settings,
-        CancellationToken cancellationToken)
-    {
-        using var scope = provider.CreateScope();
-        var useCase = scope.ServiceProvider.GetRequiredService<IRemoveNicUseCase<Desktop>>();
+        CancellationToken cancellationToken) {
+        using IServiceScope scope = provider.CreateScope();
+        IRemovePortUseCase<Desktop> useCase = scope.ServiceProvider.GetRequiredService<IRemovePortUseCase<Desktop>>();
 
         await useCase.ExecuteAsync(settings.DesktopName, settings.Index);
 

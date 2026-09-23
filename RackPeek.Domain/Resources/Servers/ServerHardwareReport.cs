@@ -21,34 +21,29 @@ public record ServerHardwareRow(
     int GpuCount,
     int TotalGpuVramGb,
     string GpuSummary,
-    bool Ipmi, 
-    IReadOnlyList<Nic> Nics
-)
-{        
-public string NicSummary =>
-string.Join(", ",
-    (Nics ?? [])
-    .SelectMany(n =>
-    {
-        var ports = n.Ports ?? 1;
-        var speed = n.Speed ?? 0;
-        return Enumerable.Repeat(speed, ports);
-    })
-    .GroupBy(speed => speed)
-    .OrderByDescending(g => g.Key)
-    .Select(g => $"{g.Count()}×{g.Key}G")
-    .DefaultIfEmpty("none")
-);
+    bool Ipmi,
+    IReadOnlyList<Port> Ports
+) {
+    public string NicSummary =>
+        string.Join(", ",
+            (Ports ?? [])
+            .SelectMany(n => {
+                var ports = n.Count ?? 1;
+                var speed = n.Speed ?? 0;
+                return Enumerable.Repeat(speed, ports);
+            })
+            .GroupBy(speed => speed)
+            .OrderByDescending(g => g.Key)
+            .Select(g => $"{g.Count()}×{g.Key}G")
+            .DefaultIfEmpty("none")
+        );
 }
 
-public class ServerHardwareReportUseCase(IResourceCollection repository) : IUseCase
-{
-    public async Task<ServerHardwareReport> ExecuteAsync()
-    {
-        var servers = await repository.GetAllOfTypeAsync<Server>();
+public class ServerHardwareReportUseCase(IResourceCollection repository) : IUseCase {
+    public async Task<ServerHardwareReport> ExecuteAsync() {
+        IReadOnlyList<Server> servers = await repository.GetAllOfTypeAsync<Server>();
 
-        var rows = servers.Select(server =>
-        {
+        var rows = servers.Select(server => {
             var totalCores = server.Cpus?.Sum(c => c.Cores) ?? 0;
             var totalThreads = server.Cpus?.Sum(c => c.Threads) ?? 0;
 
@@ -69,8 +64,8 @@ public class ServerHardwareReportUseCase(IResourceCollection repository) : IUseC
                 .Where(d => d.Type == "hdd")
                 .Sum(d => d.Size) ?? 0;
 
-            var totalNicPorts = server.Nics?.Sum(n => n.Ports) ?? 0;
-            var maxNicSpeed = server.Nics?.Max(n => n.Speed) ?? 0;
+            var totalNicPorts = server.Ports?.Sum(n => n.Count) ?? 0;
+            var maxNicSpeed = server.Ports?.Max(n => n.Speed) ?? 0;
 
             var gpuCount = server.Gpus?.Count ?? 0;
 
@@ -100,7 +95,7 @@ public class ServerHardwareReportUseCase(IResourceCollection repository) : IUseC
                 totalGpuVram,
                 gpuSummary,
                 server.Ipmi ?? false,
-                server.Nics ?? new List<Nic>()
+                server.Ports ?? new List<Port>()
             );
         }).ToList();
 

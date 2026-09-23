@@ -1,14 +1,13 @@
 using System.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain.Resources.Desktops;
-using RackPeek.Domain.UseCases.Nics;
+using RackPeek.Domain.UseCases.Ports;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace Shared.Rcl.Commands.Desktops.Nics;
 
-public class DesktopNicSetSettings : CommandSettings
-{
+public class DesktopNicSetSettings : CommandSettings {
     [CommandArgument(0, "<desktop>")]
     [Description("The desktop name.")]
     public string DesktopName { get; set; } = default!;
@@ -31,15 +30,13 @@ public class DesktopNicSetSettings : CommandSettings
 }
 
 public class DesktopNicSetCommand(IServiceProvider provider)
-    : AsyncCommand<DesktopNicSetSettings>
-{
-    public override async Task<int> ExecuteAsync(
+    : AsyncCommand<DesktopNicSetSettings> {
+    protected override async Task<int> ExecuteAsync(
         CommandContext context,
         DesktopNicSetSettings settings,
-        CancellationToken cancellationToken)
-    {
-        using var scope = provider.CreateScope();
-        var useCase = scope.ServiceProvider.GetRequiredService<IUpdateNicUseCase<Desktop>>();
+        CancellationToken cancellationToken) {
+        using IServiceScope scope = provider.CreateScope();
+        IUpdatePortUseCase<Desktop> useCase = scope.ServiceProvider.GetRequiredService<IUpdatePortUseCase<Desktop>>();
 
         await useCase.ExecuteAsync(settings.DesktopName, settings.Index, settings.Type, settings.Speed, settings.Ports);
 

@@ -1,0 +1,102 @@
+name: Tests
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+
+  format:
+    name: Format Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Check Formatting
+        run: dotnet format --verify-no-changes
+
+
+  cli-tests:
+    name: CLI Tests
+    runs-on: ubuntu-latest
+    needs: format
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Run CLI Tests
+        run: dotnet test Tests --no-build --configuration Release --verbosity normal
+
+
+  webui-tests:
+    name: WebUI / Playwright Tests
+    runs-on: ubuntu-24.04
+    needs: cli-tests
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-pw-chromium-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-pw-chromium-
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Install Playwright Browsers
+        shell: bash
+        run: |
+          pwsh Tests.E2e/bin/Release/net*/playwright.ps1 install --with-deps chromium
+
+      - name: Build Docker Image
+        run: |
+          docker build \
+            -t rackpeek:ci \
+            -f RackPeek.Web/Dockerfile \
+            .
+
+      - name: Run E2E Tests
+        run: dotnet test Tests.E2e --configuration Release --verbosity normal

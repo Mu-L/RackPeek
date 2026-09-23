@@ -1,64 +1,80 @@
 using System.ComponentModel.DataAnnotations;
-using DocMigrator.Yaml;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RackPeek.Domain;
 using RackPeek.Domain.Helpers;
 using RackPeek.Domain.Persistence;
 using RackPeek.Domain.Persistence.Yaml;
+using RackPeek.Domain.Resources.AccessPoints;
+using RackPeek.Domain.Resources.Desktops;
+using RackPeek.Domain.Resources.Firewalls;
+using RackPeek.Domain.Resources.Laptops;
+using RackPeek.Domain.Resources.Routers;
+using RackPeek.Domain.Resources.Servers;
+using RackPeek.Domain.Resources.Services;
+using RackPeek.Domain.Resources.Switches;
+using RackPeek.Domain.Resources.SystemResources;
 using Shared.Rcl.Commands;
 using Shared.Rcl.Commands.AccessPoints;
 using Shared.Rcl.Commands.AccessPoints.Labels;
-using Shared.Rcl.Commands.Ansible;
+using Shared.Rcl.Commands.AccessPoints.Rename;
+using Shared.Rcl.Commands.Connections;
 using Shared.Rcl.Commands.Desktops;
-using Shared.Rcl.Commands.Desktops.Labels;
 using Shared.Rcl.Commands.Desktops.Cpus;
 using Shared.Rcl.Commands.Desktops.Drive;
 using Shared.Rcl.Commands.Desktops.Gpus;
+using Shared.Rcl.Commands.Desktops.Labels;
 using Shared.Rcl.Commands.Desktops.Nics;
+using Shared.Rcl.Commands.Desktops.Rename;
+using Shared.Rcl.Commands.Exporters;
 using Shared.Rcl.Commands.Firewalls;
 using Shared.Rcl.Commands.Firewalls.Labels;
 using Shared.Rcl.Commands.Firewalls.Ports;
+using Shared.Rcl.Commands.Firewalls.Rename;
+using Shared.Rcl.Commands.Graph;
 using Shared.Rcl.Commands.Laptops;
-using Shared.Rcl.Commands.Laptops.Labels;
 using Shared.Rcl.Commands.Laptops.Cpus;
 using Shared.Rcl.Commands.Laptops.Drive;
 using Shared.Rcl.Commands.Laptops.Gpus;
+using Shared.Rcl.Commands.Laptops.Labels;
+using Shared.Rcl.Commands.Laptops.Rename;
 using Shared.Rcl.Commands.Routers;
 using Shared.Rcl.Commands.Routers.Labels;
 using Shared.Rcl.Commands.Routers.Ports;
+using Shared.Rcl.Commands.Routers.Rename;
 using Shared.Rcl.Commands.Servers;
 using Shared.Rcl.Commands.Servers.Cpus;
 using Shared.Rcl.Commands.Servers.Drives;
 using Shared.Rcl.Commands.Servers.Gpus;
 using Shared.Rcl.Commands.Servers.Labels;
 using Shared.Rcl.Commands.Servers.Nics;
+using Shared.Rcl.Commands.Servers.Rename;
 using Shared.Rcl.Commands.Services;
 using Shared.Rcl.Commands.Services.Labels;
+using Shared.Rcl.Commands.Services.Rename;
 using Shared.Rcl.Commands.Switches;
 using Shared.Rcl.Commands.Switches.Labels;
 using Shared.Rcl.Commands.Switches.Ports;
+using Shared.Rcl.Commands.Switches.Rename;
 using Shared.Rcl.Commands.Systems;
 using Shared.Rcl.Commands.Systems.Labels;
+using Shared.Rcl.Commands.Systems.Rename;
+using Shared.Rcl.Commands.Tags;
 using Shared.Rcl.Commands.Ups;
 using Shared.Rcl.Commands.Ups.Labels;
+using Shared.Rcl.Commands.Ups.Rename;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace Shared.Rcl;
 
-public static class CliBootstrap
-{
+public static class CliBootstrap {
     private static string[]? _lastArgs;
     private static CommandApp? _app;
 
     private static bool _showingHelp;
 
-    public static void SetContext(string[] args, CommandApp app)
-    {
+    public static void SetContext(string[] args, CommandApp app) {
         _lastArgs = args;
         _app = app;
     }
@@ -67,15 +83,14 @@ public static class CliBootstrap
         IServiceCollection services,
         IConfiguration configuration,
         string yamlDir,
-        string yamlFile)
-    {
+        string yamlFile) {
         services.AddSingleton(configuration);
         var appBasePath = AppContext.BaseDirectory;
 
         var resolvedYamlDir = Path.IsPathRooted(yamlDir)
             ? yamlDir
             : Path.Combine(appBasePath, yamlDir);
-        
+
         Directory.CreateDirectory(resolvedYamlDir);
 
         var fullYamlPath = Path.Combine(resolvedYamlDir, yamlFile);
@@ -86,14 +101,14 @@ public static class CliBootstrap
         services.AddScoped<RackPeekConfigMigrationDeserializer>();
         services.AddScoped<IResourceYamlMigrationService, ResourceYamlMigrationService>();
 
-        var b = services.BuildServiceProvider();
-        
+        ServiceProvider b = services.BuildServiceProvider();
+
         var collection = new YamlResourceCollection(
             fullYamlPath,
             new PhysicalTextFileStore(),
             new ResourceCollection(),
-                    b.GetRequiredService<IResourceYamlMigrationService>());
-            
+            b.GetRequiredService<IResourceYamlMigrationService>());
+
 
         await collection.LoadAsync();
         services.AddSingleton<IResourceCollection>(collection);
@@ -106,11 +121,9 @@ public static class CliBootstrap
         services.AddCommands();
     }
 
-    public static void BuildApp(CommandApp app)
-    {
+    public static void BuildApp(CommandApp app) {
         // Spectre bootstrap
-        app.Configure(config =>
-        {
+        app.Configure(config => {
             config.SetApplicationName("rpk");
             config.ValidateExamples();
             config.SetApplicationVersion(RpkConstants.Version);
@@ -124,8 +137,7 @@ public static class CliBootstrap
             // ----------------------------
             // Server commands (CRUD-style)
             // ----------------------------
-            config.AddBranch("servers", server =>
-            {
+            config.AddBranch("servers", server => {
                 server.SetDescription("Manage servers and their components.");
 
                 server.AddCommand<ServerReportCommand>("summary")
@@ -143,12 +155,14 @@ public static class CliBootstrap
 
                 server.AddCommand<ServerDeleteCommand>("del").WithDescription("Delete a server from the inventory.");
 
+                server.AddCommand<ServerRenameCommand>("rename")
+                    .WithDescription("Rename a server to a new name.");
+
                 server.AddCommand<ServerTreeCommand>("tree")
                     .WithDescription("Display the dependency tree of a server.");
 
                 // Server CPUs
-                server.AddBranch("cpu", cpu =>
-                {
+                server.AddBranch("cpu", cpu => {
                     cpu.SetDescription("Manage CPUs attached to a server.");
 
                     cpu.AddCommand<ServerCpuAddCommand>("add").WithDescription("Add a CPU to a specific server.");
@@ -159,8 +173,7 @@ public static class CliBootstrap
                 });
 
                 // Server Drives
-                server.AddBranch("drive", drive =>
-                {
+                server.AddBranch("drive", drive => {
                     drive.SetDescription("Manage drives attached to a server.");
 
                     drive.AddCommand<ServerDriveAddCommand>("add").WithDescription("Add a storage drive to a server.");
@@ -172,8 +185,7 @@ public static class CliBootstrap
                 });
 
                 // Server GPUs
-                server.AddBranch("gpu", gpu =>
-                {
+                server.AddBranch("gpu", gpu => {
                     gpu.SetDescription("Manage GPUs attached to a server.");
 
                     gpu.AddCommand<ServerGpuAddCommand>("add").WithDescription("Add a GPU to a server.");
@@ -184,8 +196,7 @@ public static class CliBootstrap
                 });
 
                 // Server NICs
-                server.AddBranch("nic", nic =>
-                {
+                server.AddBranch("nic", nic => {
                     nic.SetDescription("Manage network interface cards (NICs) for a server.");
 
                     nic.AddCommand<ServerNicAddCommand>("add").WithDescription("Add a NIC to a server.");
@@ -196,21 +207,27 @@ public static class CliBootstrap
                 });
 
                 // Server Labels
-                server.AddBranch("label", label =>
-                {
+                server.AddBranch("label", label => {
                     label.SetDescription("Manage labels on a server.");
 
                     label.AddCommand<ServerLabelAddCommand>("add").WithDescription("Add a label to a server.");
 
-                    label.AddCommand<ServerLabelRemoveCommand>("remove").WithDescription("Remove a label from a server.");
+                    label.AddCommand<ServerLabelRemoveCommand>("remove")
+                        .WithDescription("Remove a label from a server.");
+                });
+
+                // Server Tags
+                server.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on a server.");
+                    tag.AddCommand<TagAddCommand<Server>>("add").WithDescription("Add a tag to a server.");
+                    tag.AddCommand<TagRemoveCommand<Server>>("remove").WithDescription("Remove a tag from a server.");
                 });
             });
 
             // ----------------------------
             // Switch commands
             // ----------------------------
-            config.AddBranch("switches", switches =>
-            {
+            config.AddBranch("switches", switches => {
                 switches.SetDescription("Manage network switches.");
 
                 switches.AddCommand<SwitchReportCommand>("summary")
@@ -230,8 +247,11 @@ public static class CliBootstrap
                 switches.AddCommand<SwitchSetCommand>("set").WithDescription("Update properties of a switch.");
 
                 switches.AddCommand<SwitchDeleteCommand>("del").WithDescription("Delete a switch from the inventory.");
-                switches.AddBranch("port", port =>
-                {
+
+                switches.AddCommand<SwitchRenameCommand>("rename")
+                    .WithDescription("Rename a switch to a new name.");
+
+                switches.AddBranch("port", port => {
                     port.SetDescription("Manage ports on a network switch.");
 
                     port.AddCommand<SwitchPortAddCommand>("add").WithDescription("Add a port to a switch.");
@@ -241,19 +261,24 @@ public static class CliBootstrap
                     port.AddCommand<SwitchPortRemoveCommand>("del").WithDescription("Remove a port from a switch.");
                 });
 
-                switches.AddBranch("label", label =>
-                {
+                switches.AddBranch("label", label => {
                     label.SetDescription("Manage labels on a switch.");
                     label.AddCommand<SwitchLabelAddCommand>("add").WithDescription("Add a label to a switch.");
-                    label.AddCommand<SwitchLabelRemoveCommand>("remove").WithDescription("Remove a label from a switch.");
+                    label.AddCommand<SwitchLabelRemoveCommand>("remove")
+                        .WithDescription("Remove a label from a switch.");
+                });
+
+                switches.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on a switch.");
+                    tag.AddCommand<TagAddCommand<Switch>>("add").WithDescription("Add a tag to a switch.");
+                    tag.AddCommand<TagRemoveCommand<Switch>>("remove").WithDescription("Remove a tag from a switch.");
                 });
             });
 
             // ----------------------------
             // Routers commands
             // ----------------------------
-            config.AddBranch("routers", routers =>
-            {
+            config.AddBranch("routers", routers => {
                 routers.SetDescription("Manage network routers.");
 
                 routers.AddCommand<RouterReportCommand>("summary")
@@ -273,8 +298,11 @@ public static class CliBootstrap
                 routers.AddCommand<RouterSetCommand>("set").WithDescription("Update properties of a router.");
 
                 routers.AddCommand<RouterDeleteCommand>("del").WithDescription("Delete a router from the inventory.");
-                routers.AddBranch("port", port =>
-                {
+
+                routers.AddCommand<RouterRenameCommand>("rename")
+                    .WithDescription("Rename a router to a new name.");
+
+                routers.AddBranch("port", port => {
                     port.SetDescription("Manage ports on a router.");
 
                     port.AddCommand<RouterPortAddCommand>("add").WithDescription("Add a port to a router.");
@@ -284,19 +312,24 @@ public static class CliBootstrap
                     port.AddCommand<RouterPortRemoveCommand>("del").WithDescription("Remove a port from a router.");
                 });
 
-                routers.AddBranch("label", label =>
-                {
+                routers.AddBranch("label", label => {
                     label.SetDescription("Manage labels on a router.");
                     label.AddCommand<RouterLabelAddCommand>("add").WithDescription("Add a label to a router.");
-                    label.AddCommand<RouterLabelRemoveCommand>("remove").WithDescription("Remove a label from a router.");
+                    label.AddCommand<RouterLabelRemoveCommand>("remove")
+                        .WithDescription("Remove a label from a router.");
+                });
+
+                routers.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on a router.");
+                    tag.AddCommand<TagAddCommand<Router>>("add").WithDescription("Add a tag to a router.");
+                    tag.AddCommand<TagRemoveCommand<Router>>("remove").WithDescription("Remove a tag from a router.");
                 });
             });
 
             // ----------------------------
             // Firewalls commands
             // ----------------------------
-            config.AddBranch("firewalls", firewalls =>
-            {
+            config.AddBranch("firewalls", firewalls => {
                 firewalls.SetDescription("Manage firewalls.");
 
                 firewalls.AddCommand<FirewallReportCommand>("summary")
@@ -316,8 +349,11 @@ public static class CliBootstrap
 
                 firewalls.AddCommand<FirewallDeleteCommand>("del")
                     .WithDescription("Delete a firewall from the inventory.");
-                firewalls.AddBranch("port", port =>
-                {
+
+                firewalls.AddCommand<FirewallRenameCommand>("rename")
+                    .WithDescription("Rename a firewall to a new name.");
+
+                firewalls.AddBranch("port", port => {
                     port.SetDescription("Manage ports on a firewall.");
 
                     port.AddCommand<FirewallPortAddCommand>("add").WithDescription("Add a port to a firewall.");
@@ -327,19 +363,25 @@ public static class CliBootstrap
                     port.AddCommand<FirewallPortRemoveCommand>("del").WithDescription("Remove a port from a firewall.");
                 });
 
-                firewalls.AddBranch("label", label =>
-                {
+                firewalls.AddBranch("label", label => {
                     label.SetDescription("Manage labels on a firewall.");
                     label.AddCommand<FirewallLabelAddCommand>("add").WithDescription("Add a label to a firewall.");
-                    label.AddCommand<FirewallLabelRemoveCommand>("remove").WithDescription("Remove a label from a firewall.");
+                    label.AddCommand<FirewallLabelRemoveCommand>("remove")
+                        .WithDescription("Remove a label from a firewall.");
+                });
+
+                firewalls.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on a firewall.");
+                    tag.AddCommand<TagAddCommand<Firewall>>("add").WithDescription("Add a tag to a firewall.");
+                    tag.AddCommand<TagRemoveCommand<Firewall>>("remove")
+                        .WithDescription("Remove a tag from a firewall.");
                 });
             });
 
             // ----------------------------
             // System commands
             // ----------------------------
-            config.AddBranch("systems", system =>
-            {
+            config.AddBranch("systems", system => {
                 system.SetDescription("Manage systems and their dependencies.");
 
                 system.AddCommand<SystemReportCommand>("summary")
@@ -358,22 +400,31 @@ public static class CliBootstrap
 
                 system.AddCommand<SystemDeleteCommand>("del").WithDescription("Delete a system from the inventory.");
 
+                system.AddCommand<SystemRenameCommand>("rename")
+                    .WithDescription("Rename a system to a new name.");
+
                 system.AddCommand<SystemTreeCommand>("tree")
                     .WithDescription("Display the dependency tree for a system.");
 
-                system.AddBranch("label", label =>
-                {
+                system.AddBranch("label", label => {
                     label.SetDescription("Manage labels on a system.");
                     label.AddCommand<SystemLabelAddCommand>("add").WithDescription("Add a label to a system.");
-                    label.AddCommand<SystemLabelRemoveCommand>("remove").WithDescription("Remove a label from a system.");
+                    label.AddCommand<SystemLabelRemoveCommand>("remove")
+                        .WithDescription("Remove a label from a system.");
+                });
+
+                system.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on a system.");
+                    tag.AddCommand<TagAddCommand<SystemResource>>("add").WithDescription("Add a tag to a system.");
+                    tag.AddCommand<TagRemoveCommand<SystemResource>>("remove")
+                        .WithDescription("Remove a tag from a system.");
                 });
             });
 
             // ----------------------------
             // Access Points
             // ----------------------------
-            config.AddBranch("accesspoints", ap =>
-            {
+            config.AddBranch("accesspoints", ap => {
                 ap.SetDescription("Manage access points.");
 
                 ap.AddCommand<AccessPointReportCommand>("summary")
@@ -392,19 +443,30 @@ public static class CliBootstrap
 
                 ap.AddCommand<AccessPointDeleteCommand>("del").WithDescription("Delete an access point.");
 
-                ap.AddBranch("label", label =>
-                {
+                ap.AddCommand<AccessPointRenameCommand>("rename")
+                    .WithDescription("Rename an access point to a new name.");
+
+                ap.AddBranch("label", label => {
                     label.SetDescription("Manage labels on an access point.");
-                    label.AddCommand<AccessPointLabelAddCommand>("add").WithDescription("Add a label to an access point.");
-                    label.AddCommand<AccessPointLabelRemoveCommand>("remove").WithDescription("Remove a label from an access point.");
+                    label.AddCommand<AccessPointLabelAddCommand>("add")
+                        .WithDescription("Add a label to an access point.");
+                    label.AddCommand<AccessPointLabelRemoveCommand>("remove")
+                        .WithDescription("Remove a label from an access point.");
+                });
+
+                ap.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on an access point.");
+                    tag.AddCommand<TagAddCommand<AccessPoint>>("add")
+                        .WithDescription("Add a tag to an access point.");
+                    tag.AddCommand<TagRemoveCommand<AccessPoint>>("remove")
+                        .WithDescription("Remove a tag from an access point.");
                 });
             });
 
             // ----------------------------
             // UPS units
             // ----------------------------
-            config.AddBranch("ups", ups =>
-            {
+            config.AddBranch("ups", ups => {
                 ups.SetDescription("Manage UPS units.");
 
                 ups.AddCommand<UpsReportCommand>("summary")
@@ -423,19 +485,29 @@ public static class CliBootstrap
 
                 ups.AddCommand<UpsDeleteCommand>("del").WithDescription("Delete a UPS unit.");
 
-                ups.AddBranch("label", label =>
-                {
+                ups.AddCommand<UpsRenameCommand>("rename")
+                    .WithDescription("Rename a UPS unit to a new name.");
+
+                ups.AddBranch("label", label => {
                     label.SetDescription("Manage labels on a UPS unit.");
                     label.AddCommand<UpsLabelAddCommand>("add").WithDescription("Add a label to a UPS unit.");
-                    label.AddCommand<UpsLabelRemoveCommand>("remove").WithDescription("Remove a label from a UPS unit.");
+                    label.AddCommand<UpsLabelRemoveCommand>("remove")
+                        .WithDescription("Remove a label from a UPS unit.");
+                });
+
+                ups.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on a UPS unit.");
+                    tag.AddCommand<TagAddCommand<RackPeek.Domain.Resources.UpsUnits.Ups>>("add")
+                        .WithDescription("Add a tag to a UPS unit.");
+                    tag.AddCommand<TagRemoveCommand<RackPeek.Domain.Resources.UpsUnits.Ups>>("remove")
+                        .WithDescription("Remove a tag from a UPS unit.");
                 });
             });
 
             // ----------------------------
             // Desktops
             // ----------------------------
-            config.AddBranch("desktops", desktops =>
-            {
+            config.AddBranch("desktops", desktops => {
                 desktops.SetDescription("Manage desktop computers and their components.");
 
                 // CRUD
@@ -447,14 +519,17 @@ public static class CliBootstrap
                 desktops.AddCommand<DesktopSetCommand>("set").WithDescription("Update properties of a desktop.");
                 desktops.AddCommand<DesktopDeleteCommand>("del")
                     .WithDescription("Delete a desktop from the inventory.");
+
+                desktops.AddCommand<DesktopRenameCommand>("rename")
+                    .WithDescription("Rename a desktop to a new name.");
+
                 desktops.AddCommand<DesktopReportCommand>("summary")
                     .WithDescription("Show a summarized hardware report for all desktops.");
                 desktops.AddCommand<DesktopTreeCommand>("tree")
                     .WithDescription("Display the dependency tree for a desktop.");
 
                 // CPU
-                desktops.AddBranch("cpu", cpu =>
-                {
+                desktops.AddBranch("cpu", cpu => {
                     cpu.SetDescription("Manage CPUs attached to desktops.");
                     cpu.AddCommand<DesktopCpuAddCommand>("add").WithDescription("Add a CPU to a desktop.");
                     cpu.AddCommand<DesktopCpuSetCommand>("set").WithDescription("Update a desktop CPU.");
@@ -462,8 +537,7 @@ public static class CliBootstrap
                 });
 
                 // Drives
-                desktops.AddBranch("drive", drive =>
-                {
+                desktops.AddBranch("drive", drive => {
                     drive.SetDescription("Manage storage drives attached to desktops.");
                     drive.AddCommand<DesktopDriveAddCommand>("add").WithDescription("Add a drive to a desktop.");
                     drive.AddCommand<DesktopDriveSetCommand>("set").WithDescription("Update a desktop drive.");
@@ -472,8 +546,7 @@ public static class CliBootstrap
                 });
 
                 // GPUs
-                desktops.AddBranch("gpu", gpu =>
-                {
+                desktops.AddBranch("gpu", gpu => {
                     gpu.SetDescription("Manage GPUs attached to desktops.");
                     gpu.AddCommand<DesktopGpuAddCommand>("add").WithDescription("Add a GPU to a desktop.");
                     gpu.AddCommand<DesktopGpuSetCommand>("set").WithDescription("Update a desktop GPU.");
@@ -481,27 +554,32 @@ public static class CliBootstrap
                 });
 
                 // NICs
-                desktops.AddBranch("nic", nic =>
-                {
+                desktops.AddBranch("nic", nic => {
                     nic.SetDescription("Manage network interface cards (NICs) for desktops.");
                     nic.AddCommand<DesktopNicAddCommand>("add").WithDescription("Add a NIC to a desktop.");
                     nic.AddCommand<DesktopNicSetCommand>("set").WithDescription("Update a desktop NIC.");
                     nic.AddCommand<DesktopNicRemoveCommand>("del").WithDescription("Remove a NIC from a desktop.");
                 });
 
-                desktops.AddBranch("label", label =>
-                {
+                desktops.AddBranch("label", label => {
                     label.SetDescription("Manage labels on a desktop.");
                     label.AddCommand<DesktopLabelAddCommand>("add").WithDescription("Add a label to a desktop.");
-                    label.AddCommand<DesktopLabelRemoveCommand>("remove").WithDescription("Remove a label from a desktop.");
+                    label.AddCommand<DesktopLabelRemoveCommand>("remove")
+                        .WithDescription("Remove a label from a desktop.");
+                });
+
+                desktops.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on a desktop.");
+                    tag.AddCommand<TagAddCommand<Desktop>>("add").WithDescription("Add a tag to a desktop.");
+                    tag.AddCommand<TagRemoveCommand<Desktop>>("remove")
+                        .WithDescription("Remove a tag from a desktop.");
                 });
             });
 
             // ----------------------------
             // Laptops
             // ----------------------------
-            config.AddBranch("laptops", laptops =>
-            {
+            config.AddBranch("laptops", laptops => {
                 laptops.SetDescription("Manage Laptop computers and their components.");
 
                 // CRUD
@@ -512,14 +590,17 @@ public static class CliBootstrap
                     .WithDescription("Show detailed information about a Laptop.");
                 laptops.AddCommand<LaptopSetCommand>("set").WithDescription("Update properties of a laptop.");
                 laptops.AddCommand<LaptopDeleteCommand>("del").WithDescription("Delete a Laptop from the inventory.");
+
+                laptops.AddCommand<LaptopRenameCommand>("rename")
+                    .WithDescription("Rename a Laptop to a new name.");
+
                 laptops.AddCommand<LaptopReportCommand>("summary")
                     .WithDescription("Show a summarized hardware report for all Laptops.");
                 laptops.AddCommand<LaptopTreeCommand>("tree")
                     .WithDescription("Display the dependency tree for a Laptop.");
 
                 // CPU
-                laptops.AddBranch("cpu", cpu =>
-                {
+                laptops.AddBranch("cpu", cpu => {
                     cpu.SetDescription("Manage CPUs attached to Laptops.");
                     cpu.AddCommand<LaptopCpuAddCommand>("add").WithDescription("Add a CPU to a Laptop.");
                     cpu.AddCommand<LaptopCpuSetCommand>("set").WithDescription("Update a Laptop CPU.");
@@ -527,36 +608,40 @@ public static class CliBootstrap
                 });
 
                 // Drives
-                laptops.AddBranch("drives", drives =>
-                {
-                    drives.SetDescription("Manage storage drives attached to Laptops.");
-                    drives.AddCommand<LaptopDriveAddCommand>("add").WithDescription("Add a drive to a Laptop.");
-                    drives.AddCommand<LaptopDriveSetCommand>("set").WithDescription("Update a Laptop drive.");
-                    drives.AddCommand<LaptopDriveRemoveCommand>("del").WithDescription("Remove a drive from a Laptop.");
+                laptops.AddBranch("drive", drive => {
+                    drive.SetDescription("Manage storage drives attached to Laptops.");
+                    drive.AddCommand<LaptopDriveAddCommand>("add").WithDescription("Add a drive to a Laptop.");
+                    drive.AddCommand<LaptopDriveSetCommand>("set").WithDescription("Update a Laptop drive.");
+                    drive.AddCommand<LaptopDriveRemoveCommand>("del").WithDescription("Remove a drive from a Laptop.");
                 });
 
                 // GPUs
-                laptops.AddBranch("gpu", gpu =>
-                {
+                laptops.AddBranch("gpu", gpu => {
                     gpu.SetDescription("Manage GPUs attached to Laptops.");
                     gpu.AddCommand<LaptopGpuAddCommand>("add").WithDescription("Add a GPU to a Laptop.");
                     gpu.AddCommand<LaptopGpuSetCommand>("set").WithDescription("Update a Laptop GPU.");
                     gpu.AddCommand<LaptopGpuRemoveCommand>("del").WithDescription("Remove a GPU from a Laptop.");
                 });
 
-                laptops.AddBranch("label", label =>
-                {
+                laptops.AddBranch("label", label => {
                     label.SetDescription("Manage labels on a laptop.");
                     label.AddCommand<LaptopLabelAddCommand>("add").WithDescription("Add a label to a laptop.");
-                    label.AddCommand<LaptopLabelRemoveCommand>("remove").WithDescription("Remove a label from a laptop.");
+                    label.AddCommand<LaptopLabelRemoveCommand>("remove")
+                        .WithDescription("Remove a label from a laptop.");
+                });
+
+                laptops.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on a laptop.");
+                    tag.AddCommand<TagAddCommand<Laptop>>("add").WithDescription("Add a tag to a laptop.");
+                    tag.AddCommand<TagRemoveCommand<Laptop>>("remove")
+                        .WithDescription("Remove a tag from a laptop.");
                 });
             });
 
             // ----------------------------
             // Services
             // ----------------------------
-            config.AddBranch("services", service =>
-            {
+            config.AddBranch("services", service => {
                 service.SetDescription("Manage services and their configurations.");
 
                 service.AddCommand<ServiceReportCommand>("summary")
@@ -575,35 +660,91 @@ public static class CliBootstrap
 
                 service.AddCommand<ServiceDeleteCommand>("del").WithDescription("Delete a service.");
 
+                service.AddCommand<ServiceRenameCommand>("rename")
+                    .WithDescription("Rename a service to a new name.");
+
                 service.AddCommand<ServiceSubnetsCommand>("subnets")
                     .WithDescription("List subnets associated with a service, optionally filtered by CIDR.");
 
-                service.AddBranch("label", label =>
-                {
+                service.AddBranch("label", label => {
                     label.SetDescription("Manage labels on a service.");
                     label.AddCommand<ServiceLabelAddCommand>("add").WithDescription("Add a label to a service.");
-                    label.AddCommand<ServiceLabelRemoveCommand>("remove").WithDescription("Remove a label from a service.");
+                    label.AddCommand<ServiceLabelRemoveCommand>("remove")
+                        .WithDescription("Remove a label from a service.");
+                });
+
+                service.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on a service.");
+                    tag.AddCommand<TagAddCommand<Service>>("add").WithDescription("Add a tag to a service.");
+                    tag.AddCommand<TagRemoveCommand<Service>>("remove")
+                        .WithDescription("Remove a tag from a service.");
                 });
             });
-            
+
             // ----------------------------
             // Ansible
             // ----------------------------
-            config.AddBranch("ansible", ansible =>
-            {
+            config.AddBranch("ansible", ansible => {
                 ansible.SetDescription("Generate and manage Ansible inventory.");
 
                 ansible.AddCommand<GenerateAnsibleInventoryCommand>("inventory")
                     .WithDescription("Generate an Ansible inventory.");
             });
-            
+
+            config.AddBranch("ssh", ssh => {
+                ssh.SetDescription("Generate SSH configuration from infrastructure.");
+
+                ssh.AddCommand<GenerateSshConfigCommand>("export")
+                    .WithDescription("Generate an SSH config file.");
+            });
+
+            config.AddBranch("hosts", hosts => {
+                hosts.SetDescription("Generate a hosts file from infrastructure.");
+
+                hosts.AddCommand<GenerateHostsFileCommand>("export")
+                    .WithDescription("Generate a /etc/hosts compatible file.");
+            });
+
+            // ----------------------------
+            // Graph / visualisation
+            // ----------------------------
+            config.AddBranch("graph", graph => {
+                graph.SetDescription("Render inventory as graph diagrams.");
+
+                graph.AddCommand<GraphTopologyCommand>("topology")
+                    .WithDescription("Emit a Mermaid flowchart of the physical topology (hardware + connections).");
+
+                graph.AddCommand<GraphLogicalCommand>("logical")
+                    .WithDescription("Emit a Mermaid flowchart of services & systems grouped by subnet and host.");
+            });
+
+            // ----------------------------
+            // Tags discovery
+            // ----------------------------
+            config.AddBranch("tags", tags => {
+                tags.SetDescription("Discover tags across resources.");
+
+                tags.AddCommand<TagsListCommand>("list")
+                    .WithDescription("List all tags in use with usage counts.");
+
+                tags.AddCommand<TagsShowCommand>("show")
+                    .WithDescription("List resources carrying a specific tag.");
+            });
+
+            config.AddBranch("connections", connections => {
+                connections.SetDescription("Manage physical or logical port connections.");
+
+                connections.AddCommand<ConnectionAddCommand>("add")
+                    .WithDescription("Create a connection between two ports.");
+
+                connections.AddCommand<ConnectionRemoveCommand>("remove")
+                    .WithDescription("Remove the connection from a specific port.");
+            });
         });
     }
 
-    private static int HandleException(Exception ex, Spectre.Console.Cli.ITypeResolver? arg2)
-    {
-        switch (ex)
-        {
+    private static int HandleException(Exception ex, ITypeResolver? arg2) {
+        switch (ex) {
             case ValidationException ve:
                 AnsiConsole.MarkupLine($"[yellow]Validation error:[/] {ve.Message}");
                 return 2;
@@ -637,19 +778,16 @@ public static class CliBootstrap
         }
     }
 
-    private static void ShowContextualHelp()
-    {
+    private static void ShowContextualHelp() {
         if (_lastArgs == null || _app == null || _showingHelp) return;
 
         _showingHelp = true;
-        try
-        {
+        try {
             // Extract command path (args before any --flags)
             var commandPath = _lastArgs.TakeWhile(a => !a.StartsWith("-")).ToList();
 
             // Try progressively shorter command paths until --help succeeds
-            while (commandPath.Count > 0)
-            {
+            while (commandPath.Count > 0) {
                 var helpArgs = commandPath.Append("--help").ToArray();
                 AnsiConsole.WriteLine();
                 var result = _app.Run(helpArgs);
@@ -657,8 +795,7 @@ public static class CliBootstrap
                 commandPath.RemoveAt(commandPath.Count - 1);
             }
         }
-        finally
-        {
+        finally {
             _showingHelp = false;
         }
     }
