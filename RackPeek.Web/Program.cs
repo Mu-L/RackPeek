@@ -9,6 +9,8 @@ using RackPeek.Domain.Persistence.Yaml;
 using RackPeek.Web.Api;
 using RackPeek.Web.Components;
 using Shared.Rcl;
+using Shared.Rcl.Docs;
+using Shared.Rcl.Servers;
 
 namespace RackPeek.Web;
 
@@ -64,12 +66,7 @@ public class Program {
         });
         builder.Services.AddScoped<ITextFileStore, PhysicalTextFileStore>();
 
-        builder.Services.AddScoped(sp => {
-            NavigationManager nav = sp.GetRequiredService<NavigationManager>();
-            return new HttpClient {
-                BaseAddress = new Uri(nav.BaseUri)
-            };
-        });
+        builder.Services.AddScoped<IDocsContentProvider, StaticWebAssetDocsContentProvider>();
 
         builder.Services.AddGitServices(builder.Configuration, yamlPath);
 
@@ -113,7 +110,8 @@ public class Program {
         app.MapStaticAssets();
 
         app.MapRazorComponents<App>()
-            .AddInteractiveServerRenderMode();
+            .AddInteractiveServerRenderMode()
+            .AddAdditionalAssemblies(typeof(ServersListPage).Assembly);
 
         return app;
     }
