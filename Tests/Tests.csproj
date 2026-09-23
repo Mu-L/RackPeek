@@ -39,7 +39,9 @@
         <Folder Include="EndToEnd\ServiceTests\"/>
     </ItemGroup>
     <ItemGroup>
-        <None Include="schemas\**\*.json" CopyToOutputDirectory="PreserveNewest"/>
+        <!-- Validate against the published schemas directly so the test and
+             published copies can never drift apart again (#310, #311). -->
+        <None Include="..\schemas\**\*.json" Link="schemas\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/>
         <None Include="TestConfigs\**\*.yaml" CopyToOutputDirectory="PreserveNewest"/>
         <None Update="TestConfigs\v3\01-server.yaml">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
