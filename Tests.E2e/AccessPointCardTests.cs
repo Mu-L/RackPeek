@@ -457,4 +457,70 @@ public class AccessPointCardTests(
             await context.CloseAsync();
         }
     }
+
+    [Fact]
+    public async Task User_Can_Type_In_The_Middle_Of_Notes_Without_The_Cursor_Jumping() {
+        (IBrowserContext context, IPage page) = await CreatePageAsync();
+        await BlazorLatency.AddAsync(page, TimeSpan.FromMilliseconds(50));
+        var name = $"e2e-ap-{Guid.NewGuid():N}"[..16];
+
+        try {
+            AccessPointCardPom card = await CreateAccessPointAsync(page, name);
+
+            await card.BeginEditAsync(name);
+            await card.SetNotesAsync(name, "Line one\nLine three");
+            await card.TypeNotesLineAfterFirstLineAsync(name, "Line two typed in the middle");
+
+            await Assertions.Expect(card.NotesEditorTextarea(name))
+                .ToHaveValueAsync("Line one\nLine two typed in the middle\nLine three");
+        }
+        finally {
+            await context.CloseAsync();
+        }
+    }
+
+    [Fact]
+    public async Task User_Can_Type_Notes_Quickly_Over_A_Slow_Connection_And_Save() {
+        (IBrowserContext context, IPage page) = await CreatePageAsync();
+        await BlazorLatency.AddAsync(page, TimeSpan.FromMilliseconds(50));
+        var name = $"e2e-ap-{Guid.NewGuid():N}"[..16];
+        var notes = "This is currently in bridge mode and uplinked to the core switch.";
+
+        try {
+            AccessPointCardPom card = await CreateAccessPointAsync(page, name);
+
+            await card.BeginEditAsync(name);
+            await card.TypeNotesAsync(name, notes);
+
+            await Assertions.Expect(card.NotesEditorTextarea(name)).ToHaveValueAsync(notes);
+
+            await card.SaveAsync(name);
+
+            await Assertions.Expect(card.NotesViewerContent(name)).ToHaveTextAsync(notes);
+        }
+        finally {
+            await context.CloseAsync();
+        }
+    }
+
+    private async Task<AccessPointCardPom> CreateAccessPointAsync(IPage page, string name) {
+        await page.GotoAsync(_fixture.BaseUrl);
+
+        var layout = new MainLayoutPom(page);
+        await layout.AssertLoadedAsync();
+        await layout.GotoHardwareAsync();
+
+        var hardwareTree = new HardwareTreePom(page);
+        await hardwareTree.AssertLoadedAsync();
+        await hardwareTree.GotoAccessPointsListAsync();
+
+        var list = new AccessPointsListPom(page);
+        await list.AssertLoadedAsync();
+        await list.AddAccessPointAsync(name);
+        await page.WaitForURLAsync($"**/resources/hardware/{name}");
+
+        var card = new AccessPointCardPom(page);
+        await card.AssertCardVisibleAsync(name);
+        return card;
+    }
 }

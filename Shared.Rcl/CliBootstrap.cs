@@ -59,6 +59,9 @@ using Shared.Rcl.Commands.Switches.Rename;
 using Shared.Rcl.Commands.Systems;
 using Shared.Rcl.Commands.Systems.Labels;
 using Shared.Rcl.Commands.Systems.Rename;
+using Shared.Rcl.Commands.OtherHardware;
+using Shared.Rcl.Commands.OtherHardware.Labels;
+using Shared.Rcl.Commands.OtherHardware.Rename;
 using Shared.Rcl.Commands.Tags;
 using Shared.Rcl.Commands.Ups;
 using Shared.Rcl.Commands.Ups.Labels;
@@ -501,6 +504,47 @@ public static class CliBootstrap {
                         .WithDescription("Add a tag to a UPS unit.");
                     tag.AddCommand<TagRemoveCommand<RackPeek.Domain.Resources.UpsUnits.Ups>>("remove")
                         .WithDescription("Remove a tag from a UPS unit.");
+                });
+            });
+
+            // ----------------------------
+            // Other hardware
+            // ----------------------------
+            config.AddBranch("other", other => {
+                other.SetDescription("Manage other hardware that doesn't fit an existing category.");
+
+                other.AddCommand<OtherReportCommand>("summary")
+                    .WithDescription("Show a hardware report for all other hardware.");
+
+                other.AddCommand<OtherAddCommand>("add").WithDescription("Add new other hardware.");
+
+                other.AddCommand<OtherGetCommand>("list").WithDescription("List all other hardware.");
+
+                other.AddCommand<OtherGetByNameCommand>("get").WithDescription("Retrieve other hardware by name.");
+
+                other.AddCommand<OtherDescribeCommand>("describe")
+                    .WithDescription("Show detailed information about other hardware.");
+
+                other.AddCommand<OtherSetCommand>("set").WithDescription("Update properties of other hardware.");
+
+                other.AddCommand<OtherDeleteCommand>("del").WithDescription("Delete other hardware.");
+
+                other.AddCommand<OtherRenameCommand>("rename")
+                    .WithDescription("Rename other hardware to a new name.");
+
+                other.AddBranch("label", label => {
+                    label.SetDescription("Manage labels on other hardware.");
+                    label.AddCommand<OtherLabelAddCommand>("add").WithDescription("Add a label to other hardware.");
+                    label.AddCommand<OtherLabelRemoveCommand>("remove")
+                        .WithDescription("Remove a label from other hardware.");
+                });
+
+                other.AddBranch("tag", tag => {
+                    tag.SetDescription("Manage tags on other hardware.");
+                    tag.AddCommand<TagAddCommand<RackPeek.Domain.Resources.OtherHardware.Other>>("add")
+                        .WithDescription("Add a tag to other hardware.");
+                    tag.AddCommand<TagRemoveCommand<RackPeek.Domain.Resources.OtherHardware.Other>>("remove")
+                        .WithDescription("Remove a tag from other hardware.");
                 });
             });
 

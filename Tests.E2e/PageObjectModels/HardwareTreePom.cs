@@ -27,6 +27,7 @@ public class HardwareTreePom(IPage page) {
     public ILocator NavUps => page.GetByTestId("nav-ups");
     public ILocator NavDesktops => page.GetByTestId("nav-desktops");
     public ILocator NavLaptops => page.GetByTestId("nav-laptops");
+    public ILocator NavOther => page.GetByTestId("nav-other");
 
     public async Task GotoAsync(string baseUrl) {
         await page.GotoAsync($"{baseUrl}/hardware/tree");
@@ -144,5 +145,10 @@ public class HardwareTreePom(IPage page) {
     public async Task GotoLaptopsListAsync() {
         await NavLaptops.ClickAsync();
         await page.WaitForURLAsync("**/laptops/list");
+    }
+
+    public async Task GotoOtherListAsync() {
+        await NavOther.ClickAsync();
+        await page.WaitForURLAsync("**/other/list");
     }
 }

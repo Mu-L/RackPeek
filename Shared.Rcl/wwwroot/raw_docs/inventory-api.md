@@ -118,7 +118,7 @@ in the repository.
 
 The `kind` discriminator is case-sensitive. Use the exact value for each
 resource type: `Server`, `Switch`, `Router`, `Firewall`, `AccessPoint`,
-`Ups`, `Desktop`, `Laptop`, `Service`, `System`.
+`Ups`, `Desktop`, `Laptop`, `Other`, `Service`, `System`.
 
 #### Response
 
