@@ -119,6 +119,22 @@ public class AccessPointCardPom(IPage page) {
     public async Task SetSpeedAsync(string accessPointName, double speed) =>
         await SpeedInput(accessPointName).FillAsync(speed.ToString(CultureInfo.InvariantCulture));
 
+    public async Task SetNotesAsync(string accessPointName, string notes) =>
+        await NotesEditorTextarea(accessPointName).FillAsync(notes);
+
+    public async Task TypeNotesAsync(string accessPointName, string text) =>
+        await NotesEditorTextarea(accessPointName).PressSequentiallyAsync(
+            text,
+            new LocatorPressSequentiallyOptions { Delay = 30 });
+
+    public async Task TypeNotesLineAfterFirstLineAsync(string accessPointName, string line) {
+        await NotesEditorTextarea(accessPointName).FocusAsync();
+        await page.Keyboard.PressAsync("Control+Home");
+        await page.Keyboard.PressAsync("End");
+        await page.Keyboard.PressAsync("Enter");
+        await TypeNotesAsync(accessPointName, line);
+    }
+
     public async Task SaveAsync(string accessPointName) {
         await SaveButton(accessPointName).ClickAsync();
         await Assertions.Expect(ModelSection(accessPointName)).ToBeVisibleAsync();
