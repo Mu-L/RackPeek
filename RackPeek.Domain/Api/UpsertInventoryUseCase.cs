@@ -118,6 +118,24 @@ public class UpsertInventoryUseCase(
             else if (oldYaml != newYaml) response.Updated.Add(incoming.Name);
         }
 
+        IReadOnlyList<Connection> currentConnections = await repo.GetConnectionsAsync();
+        List<Connection>? mergedConnections = ConnectionMerger.Merge(
+            currentConnections,
+            incomingRoot.Connections,
+            request.Mode);
+
+        if (mergedConnections != null) {
+            response.ConnectionsAdded = mergedConnections
+                .Select(ConnectionMerger.Describe)
+                .Except(currentConnections.Select(ConnectionMerger.Describe))
+                .ToList();
+
+            response.ConnectionsRemoved = currentConnections
+                .Select(ConnectionMerger.Describe)
+                .Except(mergedConnections.Select(ConnectionMerger.Describe))
+                .ToList();
+        }
+
         if (!request.DryRun) await repo.Merge(yamlInput, request.Mode);
 
         return response;

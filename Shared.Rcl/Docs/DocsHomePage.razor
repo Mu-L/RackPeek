@@ -1,10 +1,11 @@
 ﻿@page "/docs"
 @page "/docs/{*Page}"
 
-@inject HttpClient Http
+@inject IDocsContentProvider Docs
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @using Markdig
+@using System.Text.Json
 @implements IDisposable
 
 <PageTitle>Docs@(!string.IsNullOrWhiteSpace(_activeTitle) ? $": {_activeTitle}" : "")</PageTitle>
@@ -164,7 +165,7 @@
             var url = $"_content/Shared.Rcl/raw_docs/{decoded}";
             _lastFetchUrl = url;
 
-            var markdown = await Http.GetStringAsync(url);
+            var markdown = await Docs.GetAsync(decoded);
             _htmlContent = Markdown.ToHtml(markdown, Pipeline);
 
             _activeTitle = DisplayName(decoded);
@@ -215,8 +216,8 @@
 
         try
         {
-            var url = "_content/Shared.Rcl/raw_docs/docs-index.json";
-            var items = await Http.GetFromJsonAsync<List<string>>(url);
+            var json = await Docs.GetAsync("docs-index.json");
+            var items = JsonSerializer.Deserialize<List<string>>(json);
 
             _docsIndex = (items ?? new List<string>())
                 .Where(x => !string.IsNullOrWhiteSpace(x))
