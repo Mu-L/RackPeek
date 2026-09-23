@@ -32,9 +32,9 @@ public class RenameResourceUseCase<T>(IResourceCollection repo) : IRenameResourc
         IReadOnlyList<Resource> allResources = await repo.GetAllOfTypeAsync<Resource>();
 
         foreach (Resource resource in allResources) {
-            if (resource.RunsOn.Contains(originalName)) {
+            if (resource.RunsOn.Contains(originalName, StringComparer.OrdinalIgnoreCase)) {
                 resource.RunsOn = resource.RunsOn
-                    .ConvertAll(p => p == originalName ? newName : p);
+                    .ConvertAll(p => p.Equals(originalName, StringComparison.OrdinalIgnoreCase) ? newName : p);
 
                 await repo.UpdateAsync(resource);
             }
@@ -44,12 +44,12 @@ public class RenameResourceUseCase<T>(IResourceCollection repo) : IRenameResourc
         foreach (Connection connection in connections) {
             var updated = false;
 
-            if (connection.A.Resource == originalName) {
+            if (connection.A.Resource.Equals(originalName, StringComparison.OrdinalIgnoreCase)) {
                 connection.A.Resource = newName;
                 updated = true;
             }
 
-            if (connection.B.Resource == originalName) {
+            if (connection.B.Resource.Equals(originalName, StringComparison.OrdinalIgnoreCase)) {
                 connection.B.Resource = newName;
                 updated = true;
             }
