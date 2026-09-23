@@ -10,10 +10,8 @@ public record OtherDescription(
     Dictionary<string, string> Labels
 );
 
-public class DescribeOtherUseCase(IResourceCollection repository) : IUseCase
-{
-    public async Task<OtherDescription> ExecuteAsync(string name)
-    {
+public class DescribeOtherUseCase(IResourceCollection repository) : IUseCase {
+    public async Task<OtherDescription> ExecuteAsync(string name) {
         name = Normalize.HardwareName(name);
         ThrowIfInvalid.ResourceName(name);
 

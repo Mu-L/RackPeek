@@ -12,11 +12,9 @@ public record OtherHardwareRow(
     string Description
 );
 
-public class OtherHardwareReportUseCase(IResourceCollection repository) : IUseCase
-{
-    public async Task<OtherHardwareReport> ExecuteAsync()
-    {
-        var others = await repository.GetAllOfTypeAsync<Other>();
+public class OtherHardwareReportUseCase(IResourceCollection repository) : IUseCase {
+    public async Task<OtherHardwareReport> ExecuteAsync() {
+        IReadOnlyList<Other> others = await repository.GetAllOfTypeAsync<Other>();
 
         var rows = others.Select(o => new OtherHardwareRow(
             o.Name,
