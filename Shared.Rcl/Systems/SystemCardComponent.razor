@@ -179,7 +179,8 @@
             }
             else if (!string.IsNullOrWhiteSpace(EffectiveIp))
             {
-                <div class="text-zinc-300">
+                <div class="text-zinc-300"
+                     data-testid="system-ip-value">
                     @EffectiveIp
                     @if (string.IsNullOrWhiteSpace(System.Ip))
                     {
