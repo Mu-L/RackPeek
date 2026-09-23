@@ -136,6 +136,16 @@ public sealed class YamlResourceCollection(
             resourceCollection.Resources.Clear();
             resourceCollection.Resources.AddRange(merged);
 
+            List<Connection>? mergedConnections = ConnectionMerger.Merge(
+                resourceCollection.Connections,
+                incomingRoot.Connections,
+                mode);
+
+            if (mergedConnections != null) {
+                resourceCollection.Connections.Clear();
+                resourceCollection.Connections.AddRange(mergedConnections);
+            }
+
             var rootToSave = new YamlRoot {
                 Version = RackPeekConfigMigrationDeserializer.ListOfMigrations.Count,
                 Resources = resourceCollection.Resources,

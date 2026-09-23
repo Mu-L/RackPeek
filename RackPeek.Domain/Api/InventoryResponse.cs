@@ -10,4 +10,7 @@ public class ImportYamlResponse {
 
     public Dictionary<string, string> NewYaml { get; set; }
         = new(StringComparer.OrdinalIgnoreCase);
+
+    public List<string> ConnectionsAdded { get; set; } = new();
+    public List<string> ConnectionsRemoved { get; set; } = new();
 }

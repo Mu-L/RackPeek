@@ -110,7 +110,8 @@
                 Import Summary
             </div>
 
-            @if (!_added.Any() && !_updated.Any() && !_replaced.Any())
+            @if (!_added.Any() && !_updated.Any() && !_replaced.Any()
+                 && !_connectionsAdded.Any() && !_connectionsRemoved.Any())
             {
                 <div class="text-zinc-500 italic mt-2">
                     No changes detected.
@@ -194,6 +195,27 @@
                 }
             }
 
+            @if (_connectionsAdded.Any() || _connectionsRemoved.Any())
+            {
+                <div class="text-zinc-400 mt-4 mb-2" data-testid="import-connections-summary">
+                    Connections
+                </div>
+
+                @foreach (var connection in _connectionsAdded)
+                {
+                    <div class="ml-4 text-emerald-400" data-testid="import-connection-added">
+                        + @connection
+                    </div>
+                }
+
+                @foreach (var connection in _connectionsRemoved)
+                {
+                    <div class="ml-4 text-red-400" data-testid="import-connection-removed">
+                        - @connection
+                    </div>
+                }
+            }
+
         </div>
     }
 
@@ -204,6 +226,8 @@
     private List<string> _added = new();
     private List<string> _updated = new();
     private List<string> _replaced = new();
+    private List<string> _connectionsAdded = new();
+    private List<string> _connectionsRemoved = new();
 
     private Dictionary<string, string> _oldYaml = new(StringComparer.OrdinalIgnoreCase);
     private Dictionary<string, string> _newYaml = new(StringComparer.OrdinalIgnoreCase);
@@ -228,6 +252,8 @@
         _added.Clear();
         _updated.Clear();
         _replaced.Clear();
+        _connectionsAdded.Clear();
+        _connectionsRemoved.Clear();
         _oldYaml.Clear();
         _newYaml.Clear();
 
@@ -246,6 +272,8 @@
             _added = result.Added;
             _updated = result.Updated;
             _replaced = result.Replaced;
+            _connectionsAdded = result.ConnectionsAdded;
+            _connectionsRemoved = result.ConnectionsRemoved;
 
             _oldYaml = result.OldYaml;
             _newYaml = result.NewYaml;
@@ -278,6 +306,8 @@
             _added.Clear();
             _updated.Clear();
             _replaced.Clear();
+            _connectionsAdded.Clear();
+            _connectionsRemoved.Clear();
         }
         catch (Exception ex)
         {
